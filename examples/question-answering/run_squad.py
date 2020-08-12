@@ -46,6 +46,7 @@ from transformers.data.metrics.squad_metrics import (
 )
 from transformers.data.processors.squad import SquadResult, SquadV1Processor, SquadV2Processor
 
+from evaluate_official2 import eval_squad
 
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -395,7 +396,9 @@ def evaluate(args, model, tokenizer, prefix=""):
         )
 
     # Compute the F1 and exact scores.
-    results = squad_evaluate(examples, predictions)
+    #results = squad_evaluate(examples, predictions)
+    results = eval_squad(os.path.join(args.data_dir, args.predict_file), output_prediction_file, output_null_log_odds_file,
+                            args.null_score_diff_threshold)
     return results
 
 
