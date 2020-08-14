@@ -593,18 +593,8 @@ class SQuADProcessor(DataProcessor):
                         label = "1"
                     else:
                         label = "0"
-                    answer_text = ""
-                    if not is_impossible:
-                        if set_type == "train":
-                            if len(qa["answers"]) == 0:
-                                print("empty answer!!!")
-                                continue
-                            answer = qa["answers"][0]
-                            answer_text = answer["text"]
-                        elif answer_pred != None:
-                            answer_text = answer_pred[qas_id]
                     examples.append(
-                        InputExample(guid=qas_id, text_a=question_text, text_b=context_text, answer=answer_text, label=label))
+                        InputExample(guid=qas_id, text_a=question_text, text_b=context_text label=label))
         return examples
 
 glue_tasks_num_labels = {
