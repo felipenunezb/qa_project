@@ -552,6 +552,60 @@ class WnliProcessor(DataProcessor):
             examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
 
+class SQuADProcessor(DataProcessor):
+    """Processor for the SQuAD data set."""
+
+    def get_example_from_tensor_dict(self, tensor_dict):
+        """See base class."""
+        return InputExample(
+            tensor_dict["idx"].numpy(),
+            tensor_dict["sentence1"].numpy().decode("utf-8"),
+            tensor_dict["sentence2"].numpy().decode("utf-8"),
+            str(tensor_dict["label"].numpy()),
+        )
+
+    def get_train_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_squad(os.path.join(data_dir, "train-v2.0.json")), "train")
+
+    def get_dev_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_squad(os.path.join(data_dir, "dev-v2.0.json")), "dev")
+
+    def get_test_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_squad(os.path.join(data_dir, "test-v2.0.json")), "test")
+
+    def get_labels(self):
+        """See base class."""
+        return ["0", "1"]
+
+    def _create_examples(self, input_data, set_type, answer_pred=None):
+        examples = []
+        for entry in input_data:
+            for paragraph in entry["paragraphs"]:
+                context_text = paragraph["context"]
+                for qa in paragraph["qas"]:
+                    qas_id = qa["id"]
+                    question_text = qa["question"]
+                    is_impossible = qa["is_impossible"]
+                    if is_impossible:
+                        label = "1"
+                    else:
+                        label = "0"
+                    answer_text = ""
+                    if not is_impossible:
+                        if set_type == "train":
+                            if len(qa["answers"]) == 0:
+                                print("empty answer!!!")
+                                continue
+                            answer = qa["answers"][0]
+                            answer_text = answer["text"]
+                        elif answer_pred != None:
+                            answer_text = answer_pred[qas_id]
+                    examples.append(
+                        InputExample(guid=qas_id, text_a=question_text, text_b=context_text, answer=answer_text, label=label))
+        return examples
 
 glue_tasks_num_labels = {
     "cola": 2,
@@ -563,6 +617,7 @@ glue_tasks_num_labels = {
     "qnli": 2,
     "rte": 2,
     "wnli": 2,
+    "squad": 2,
 }
 
 glue_processors = {
@@ -576,6 +631,7 @@ glue_processors = {
     "qnli": QnliProcessor,
     "rte": RteProcessor,
     "wnli": WnliProcessor,
+    "squad":SQuADProcessor,
 }
 
 glue_output_modes = {
@@ -589,4 +645,5 @@ glue_output_modes = {
     "qnli": "classification",
     "rte": "classification",
     "wnli": "classification",
+    "squad":"classification",
 }

@@ -120,6 +120,25 @@ class DataProcessor:
         with open(input_file, "r", encoding="utf-8-sig") as f:
             return list(csv.reader(f, delimiter="\t", quotechar=quotechar))
 
+    def _read_squad(cls, input_file):
+        """Reads a tab separated value file."""
+        with open(input_file, "r", encoding="utf-8") as reader:
+            input_data = json.load(reader)["data"]
+            return input_data
+    def _read_ans(cls, answer_dir):
+        with open(answer_dir) as f:
+            preds = json.load(f)
+            return preds
+    def _read_nbest(cls, pred_file):
+        all_nbest = collections.OrderedDict()
+        with open(pred_file, "r") as reader:
+            input_data = json.load(reader, strict=False)
+            for (key, entries) in input_data.items():
+                if key not in all_nbest:
+                    all_nbest[key] = collections.defaultdict(float)
+                for entry in entries:
+                    all_nbest[key][entry["text"]] = entry["probability"]
+        return all_nbest
 
 class SingleSentenceClassificationProcessor(DataProcessor):
     """ Generic processor for a single sentence classification data set."""
