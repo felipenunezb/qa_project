@@ -594,7 +594,7 @@ class SQuADProcessor(DataProcessor):
                     else:
                         label = "0"
                     examples.append(
-                        InputExample(guid=qas_id, text_a=question_text, text_b=context_text label=label))
+                        InputExample(guid=qas_id, text_a=question_text, text_b=context_text, label=label))
         return examples
 
 glue_tasks_num_labels = {
