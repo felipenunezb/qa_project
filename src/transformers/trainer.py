@@ -738,7 +738,7 @@ class Trainer:
 
         model.train()
         inputs = self._prepare_inputs(inputs, model)
-        print(inputs)
+        #print(inputs)
 
         if self.args.fp16 and _use_native_amp:
             with autocast():
