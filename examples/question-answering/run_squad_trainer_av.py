@@ -22,7 +22,7 @@ import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
-from transformers import AutoConfig, AutoModelForQuestionAnsweringAV, AutoTokenizer, HfArgumentParser, SquadDataset
+from transformers import AutoConfig, AutoModelForQuestionAnsweringAV as AutoModelForQuestionAnswering, AutoTokenizer, HfArgumentParser, SquadDataset
 from transformers import SquadDataTrainingArguments as DataTrainingArguments
 from transformers import Trainer, TrainingArguments
 
