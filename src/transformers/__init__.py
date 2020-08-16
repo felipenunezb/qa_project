@@ -347,6 +347,7 @@ if is_torch_available():
         AlbertForSequenceClassification,
         AlbertForQuestionAnswering,
         AlbertForQuestionAnsweringAV,
+        AlbertForQuestionAnsweringAVPool,
         AlbertForTokenClassification,
         load_tf_weights_in_albert,
         ALBERT_PRETRAINED_MODEL_ARCHIVE_LIST,
