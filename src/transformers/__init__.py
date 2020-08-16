@@ -194,6 +194,7 @@ if is_torch_available():
         AutoModelForSequenceClassification,
         AutoModelForQuestionAnswering,
         AutoModelForQuestionAnsweringAV,
+        AutoModelForQuestionAnsweringAVPool,
         AutoModelWithLMHead,
         AutoModelForCausalLM,
         AutoModelForMaskedLM,
@@ -209,6 +210,7 @@ if is_torch_available():
         MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_AV_MAPPING,
+        MODEL_FOR_QUESTION_ANSWERING_AVPool_MAPPING,
         MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING,
         MODEL_FOR_MULTIPLE_CHOICE_MAPPING,
     )
