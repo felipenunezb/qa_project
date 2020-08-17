@@ -1059,6 +1059,7 @@ class AlbertForQuestionAnswering(AlbertPreTrainedModel):
         inputs_embeds=None,
         start_positions=None,
         end_positions=None,
+        is_impossibles=None,
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
