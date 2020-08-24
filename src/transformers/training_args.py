@@ -228,6 +228,14 @@ class TrainingArguments:
         default=None, metadata={"help": "An optional descriptor for the run. Notably used for wandb logging."}
     )
 
+    watch_type: Optional[str] = field(
+        default="gradients", metadata={"help": "'gradients' by default, set to 'false' to disable gradient logging or 'all' to log gradients and parameters"}
+    )
+
+    project_name: Optional[str] = field(
+        default="huggingface", metadata={"help": "'huggingface' by default, set this to a custom string to store results in a different project"}
+    )
+
     @property
     def train_batch_size(self) -> int:
         """
