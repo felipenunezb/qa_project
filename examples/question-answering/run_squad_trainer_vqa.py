@@ -169,15 +169,16 @@ def evaluate(eval_dataset, trainer):
     logger.info("  Batch size = %d", batch_size)
 
     all_results = []
-
+    model = trainer.model
     cnt = 0
     for inputs in tqdm(eval_dataloader, desc="Evaluating"):
-        trainer.model.eval()
+        model.eval()
         print(inputs)
+        inputs = trainer._prepare_inputs(inputs, model)
         cnt +=1
 
         with torch.no_grad():
-            outputs = trainer.model(**inputs)
+            outputs = model(**inputs)
             print('outputs')
             print(outputs)
         if cnt > 0:
