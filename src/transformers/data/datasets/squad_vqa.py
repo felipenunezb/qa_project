@@ -134,9 +134,9 @@ class SquadDataset(Dataset):
                 )
             else:
                 if mode == Split.dev:
-                    examples = self.processor.get_dev_examples(args.data_dir, ans_to_ix)
+                    examples = self.processor.get_dev_examples(args.data_dir, to_ix_dict=ans_to_ix)
                 else:
-                    examples = self.processor.get_train_examples(args.data_dir, ans_to_ix)
+                    examples = self.processor.get_train_examples(args.data_dir, to_ix_dict=ans_to_ix)
 
                 self.features = squad_convert_examples_to_features(
                     examples=examples,
