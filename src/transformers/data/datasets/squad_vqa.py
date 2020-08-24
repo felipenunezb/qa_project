@@ -11,7 +11,7 @@ from torch.utils.data.dataset import Dataset
 
 from ...modeling_auto import MODEL_FOR_QUESTION_ANSWERING_MAPPING
 from ...tokenization_utils import PreTrainedTokenizer
-from ..processors.squad_vqa import SquadFeatures, SquadV1Processor, SquadV2Processor, squad_convert_examples_to_features, create_dicts
+from ..processors.squad_vqa import SquadFeatures, SquadV1Processor, SquadV2Processor, squad_convert_examples_to_features
 
 
 logger = logging.getLogger(__name__)
@@ -125,7 +125,7 @@ class SquadDataset(Dataset):
         # and the others will use the cache.
         lock_path = cached_features_file + ".lock"
         with FileLock(lock_path):
-            ans_to_ix, ix_to_ans = create_dicts(args.data_dir)
+            ans_to_ix, ix_to_ans = self.processor.create_dicts(args.data_dir)
             if os.path.exists(cached_features_file) and not args.overwrite_cache:
                 start = time.time()
                 self.features = torch.load(cached_features_file)
