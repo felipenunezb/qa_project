@@ -190,7 +190,7 @@ class SquadDataset(Dataset):
             start_positions = torch.tensor(feature.start_position, dtype=torch.long)
             end_positions = torch.tensor(feature.end_position, dtype=torch.long)
             inputs.update({"start_positions": start_positions, "end_positions": end_positions})
-            inputs.update({"orig_ans": orig_ans})
+            inputs.update({"orig_answers": orig_ans})
             if self.args.version_2_with_negative:
                 inputs.update({"is_impossibles": int(is_impossible)})
 
