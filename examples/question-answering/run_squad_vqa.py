@@ -426,10 +426,11 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=Fal
     if os.path.exists(cached_features_file) and not args.overwrite_cache:
         logger.info("Loading features from cached file %s", cached_features_file)
         features_and_dataset = torch.load(cached_features_file)
-        features, dataset, examples = (
+        features, dataset, examples, ix_to_ans = (
             features_and_dataset["features"],
             features_and_dataset["dataset"],
             features_and_dataset["examples"],
+            features_and_dataset["ix_to_ans"],
         )
     else:
         logger.info("Creating features from dataset file at %s", input_dir)
@@ -466,7 +467,7 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=Fal
 
         if args.local_rank in [-1, 0]:
             logger.info("Saving features into cached file %s", cached_features_file)
-            torch.save({"features": features, "dataset": dataset, "examples": examples}, cached_features_file)
+            torch.save({"features": features, "dataset": dataset, "examples": examples, "ix_to_ans": ix_to_ans}, cached_features_file)
 
     if args.local_rank == 0 and not evaluate:
         # Make sure only the first process in distributed training process the dataset, and the others will use the cache
