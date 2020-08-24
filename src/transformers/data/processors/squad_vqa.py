@@ -845,10 +845,12 @@ class SquadResult:
         end_logits: The logits corresponding to the end of the answer
     """
 
-    def __init__(self, unique_id, start_logits, end_logits, start_top_index=None, end_top_index=None, cls_logits=None):
+    def __init__(self, unique_id, start_logits, end_logits, choice_logits=None, start_top_index=None, end_top_index=None, cls_logits=None):
         self.start_logits = start_logits
         self.end_logits = end_logits
         self.unique_id = unique_id
+        if choice_logits:
+            self.choice_logits = choice_logits
 
         if start_top_index:
             self.start_top_index = start_top_index
