@@ -41,7 +41,7 @@ from transformers import (
 )
 from transformers.data.metrics.squad_metrics import (
     compute_predictions_log_probs,
-    compute_predictions_logits,
+    compute_predictions_logits_vqa as compute_predictions_logits,
     squad_evaluate,
 )
 from transformers.data.processors.squad_vqa import SquadResult, SquadV1Processor, SquadV2Processor
@@ -353,6 +353,7 @@ def evaluate(args, model, tokenizer, prefix=""):
     # Compute predictions
     output_prediction_file = os.path.join(args.output_dir, "predictions_{}.json".format(prefix))
     output_nbest_file = os.path.join(args.output_dir, "nbest_predictions_{}.json".format(prefix))
+    output_nbest_choice_file = os.path.join(args.output_dir, "nbest_choice_predictions_{}.json".format(prefix))
 
     if args.version_2_with_negative:
         output_null_log_odds_file = os.path.join(args.output_dir, "null_odds_{}.json".format(prefix))
@@ -390,6 +391,7 @@ def evaluate(args, model, tokenizer, prefix=""):
             output_prediction_file,
             output_nbest_file,
             output_null_log_odds_file,
+            output_nbest_choice_file,
             args.verbose_logging,
             args.version_2_with_negative,
             args.null_score_diff_threshold,
