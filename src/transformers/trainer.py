@@ -370,7 +370,7 @@ class Trainer:
                 FutureWarning,
             )
             return self._setup_wandb()
-
+        #revert changes
         if self.is_world_process_zero():
             logger.info(
                 'Automatic Weights & Biases logging enabled, to disable set os.environ["WANDB_DISABLED"] = "true"'
