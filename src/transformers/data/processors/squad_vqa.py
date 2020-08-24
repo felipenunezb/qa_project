@@ -829,7 +829,7 @@ class SquadFeatures:
         self.start_position = start_position
         self.end_position = end_position
         self.is_impossible = is_impossible
-        self.orig_ans
+        self.orig_ans = orig_ans
         self.qas_id = qas_id
 
 
