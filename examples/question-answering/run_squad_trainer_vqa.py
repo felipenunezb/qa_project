@@ -27,6 +27,8 @@ from tqdm.auto import tqdm, trange
 from transformers import AutoConfig, AutoModelForQuestionAnsweringVQA as AutoModelForQuestionAnswering, AutoTokenizer, HfArgumentParser, SquadDataset
 from transformers import SquadDataTrainingArguments as DataTrainingArguments
 from transformers import Trainer, TrainingArguments
+from transformers import squad_convert_examples_to_features
+from transformers.data.processors.squad import SquadResult, SquadV1Processor, SquadV2Processor
 
 
 logger = logging.getLogger(__name__)
@@ -52,6 +54,9 @@ class ModelArguments:
     # or just modify its tokenizer_config.json.
     cache_dir: Optional[str] = field(
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
+    )
+    predict_file: Optional[str] = field(
+        default='dev-v2.0.json', metadata={"help": "File to Evaluate"}
     )
 
 def main():
@@ -183,6 +188,7 @@ def evaluate(eval_dataset, trainer):
             print(outputs)
         if cnt > 0:
             break
+
 
 def _mp_fn(index):
     # For xla_spawn (TPUs)
