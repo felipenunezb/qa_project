@@ -196,7 +196,4 @@ class SquadDataset(Dataset):
             if self.args.version_2_with_negative:
                 inputs.update({"is_impossibles": int(is_impossible)})
 
-        if self.mode == Split.dev:
-            inputs.update({"unique_ids": unique_ids})
-
         return inputs
