@@ -729,7 +729,7 @@ class SquadExample:
         title,
         answers=[],
         is_impossible=False,
-        orig_ans,
+        orig_ans=0,
     ):
         self.qas_id = qas_id
         self.question_text = question_text
