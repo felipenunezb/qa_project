@@ -173,7 +173,7 @@ def evaluate(eval_dataset, trainer):
     cnt = 0
     for inputs in tqdm(eval_dataloader, desc="Evaluating"):
         model.eval()
-        print(inputs)
+        print(inputs.keys())
         inputs = trainer._prepare_inputs(inputs, model)
         cnt +=1
 
