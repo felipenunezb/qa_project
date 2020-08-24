@@ -268,7 +268,7 @@ def train(args, train_dataset, model, tokenizer):
 
 
 def evaluate(args, model, tokenizer, prefix=""):
-    dataset, examples, features, ix_to_ans = load_and_cache_examples(args, tokenizer, evaluate=True, output_examples=True)
+    dataset, examples, features, ix_to_ans_dict = load_and_cache_examples(args, tokenizer, evaluate=True, output_examples=True)
 
     if not os.path.exists(args.output_dir) and args.local_rank in [-1, 0]:
         os.makedirs(args.output_dir)
@@ -396,7 +396,7 @@ def evaluate(args, model, tokenizer, prefix=""):
             args.version_2_with_negative,
             args.null_score_diff_threshold,
             tokenizer,
-            ix_to_ans,
+            ix_to_ans_dict,
         )
 
     # Compute the F1 and exact scores.

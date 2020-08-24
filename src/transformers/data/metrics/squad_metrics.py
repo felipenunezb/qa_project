@@ -588,7 +588,7 @@ def compute_predictions_logits_vqa(
     version_2_with_negative,
     null_score_diff_threshold,
     tokenizer,
-    ix_to_ans,
+    ix_to_ans_dict,
 ):
     """Write final predictions to the json file and log-odds of null if needed."""
     if output_prediction_file:
@@ -699,7 +699,7 @@ def compute_predictions_logits_vqa(
 
         nbest_choice = []
         for pred in prelim_choices:
-            nbest_choice.append(_NbestPrediction_choice(text=ix_to_ans.get(pred.choice_index), choice_logit=pred.choice_logit))
+            nbest_choice.append(_NbestPrediction_choice(text=ix_to_ans_dict.get(pred.choice_index), choice_logit=pred.choice_logit))
 
         total_choice_scores = []
         best_choice_entry = None
