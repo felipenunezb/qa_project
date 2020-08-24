@@ -52,7 +52,6 @@ class ModelArguments:
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
 
-
 def main():
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
@@ -149,6 +148,22 @@ def main():
         # so that you can share your model easily on huggingface.co/models =)
         if trainer.is_world_master():
             tokenizer.save_pretrained(training_args.output_dir)
+
+    # Evaluation
+    eval_results = {}
+    if training_args.do_eval:
+        logger.info("*** Evaluate ***")
+        evaluate(eval_dataset, trainer)
+
+
+    return eval_results
+
+def evaluate(eval_dataset, trainer):
+    eval_dataloader = trainer.get_eval_dataloader(eval_dataset)
+    # Eval!
+    logger.info("***** Running evaluation *****")
+    logger.info("  Num examples = %d", len(eval_dataset))
+    #logger.info("  Batch size = %d", training_args.eval_batch_size)
 
 
 def _mp_fn(index):
