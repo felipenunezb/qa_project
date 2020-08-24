@@ -21,6 +21,8 @@ import os
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
+import torch
+from tqdm.auto import tqdm, trange
 
 from transformers import AutoConfig, AutoModelForQuestionAnsweringVQA as AutoModelForQuestionAnswering, AutoTokenizer, HfArgumentParser, SquadDataset
 from transformers import SquadDataTrainingArguments as DataTrainingArguments
@@ -160,11 +162,35 @@ def main():
 
 def evaluate(eval_dataset, trainer):
     eval_dataloader = trainer.get_eval_dataloader(eval_dataset)
+    batch_size = eval_dataloader.batch_size
     # Eval!
     logger.info("***** Running evaluation *****")
     logger.info("  Num examples = %d", len(eval_dataset))
-    #logger.info("  Batch size = %d", training_args.eval_batch_size)
+    logger.info("  Batch size = %d", batch_size)
 
+    all_results = []
+
+    cnt = 0
+    for batch in tqdm(eval_dataloader, desc="Evaluating"):
+        trainer.model.eval()
+        batch = tuple(t.to(trainer.args.device) for t in batch)
+        print(batch)
+        cnt +=1
+
+        with torch.no_grad():
+            inputs = {
+                "input_ids": batch[0],
+                "attention_mask": batch[1],
+                "token_type_ids": batch[2],
+            }
+
+            feature_indices = batch[3]
+            print(feature_indices)
+
+            outputs = trainer.model(**inputs)
+            print(outputs)
+        if cnt > 0:
+            break
 
 def _mp_fn(index):
     # For xla_spawn (TPUs)
