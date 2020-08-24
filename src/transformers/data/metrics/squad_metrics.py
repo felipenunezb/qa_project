@@ -698,7 +698,7 @@ def compute_predictions_logits_vqa(
 
         nbest_choice = []
         for pred in prelim_predictions:
-            nbest_choice.append(NbestPrediction_choice(text=pred.choice_index, choice_logit=pred.choice_logit))
+            nbest_choice.append(_NbestPrediction_choice(text=pred.choice_index, choice_logit=pred.choice_logit))
 
         total_choice_scores = []
         best_choice_entry = None
