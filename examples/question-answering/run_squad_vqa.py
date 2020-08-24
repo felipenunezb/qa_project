@@ -30,11 +30,11 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
 from transformers import (
-    MODEL_FOR_QUESTION_ANSWERING_MAPPING,
+    MODEL_FOR_QUESTION_ANSWERING_VQA_MAPPING,
     WEIGHTS_NAME,
     AdamW,
     AutoConfig,
-    AutoModelForQuestionAnswering,
+    AutoModelForQuestionAnsweringVQA as AutoModelForQuestionAnswering,
     AutoTokenizer,
     get_linear_schedule_with_warmup,
     squad_convert_examples_to_features,
@@ -56,7 +56,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-MODEL_CONFIG_CLASSES = list(MODEL_FOR_QUESTION_ANSWERING_MAPPING.keys())
+MODEL_CONFIG_CLASSES = list(MODEL_FOR_QUESTION_ANSWERING_VQA_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 
 
