@@ -387,7 +387,8 @@ def squad_convert_examples_to_features(
         all_token_type_ids = torch.tensor([f.token_type_ids for f in features], dtype=torch.long)
         all_cls_index = torch.tensor([f.cls_index for f in features], dtype=torch.long)
         all_p_mask = torch.tensor([f.p_mask for f in features], dtype=torch.float)
-        all_is_impossible = torch.tensor([f.is_impossible for f in features], dtype=torch.float)
+        all_is_impossible = torch.tensor([f.is_impossible for f in features], dtype=torch.long)
+        all_orig_answers = torch.tensor([f.orig_ans for f in features], dtype=torch.long)
 
         if not is_training:
             all_feature_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
@@ -406,6 +407,7 @@ def squad_convert_examples_to_features(
                 all_cls_index,
                 all_p_mask,
                 all_is_impossible,
+                all_orig_answers,
             )
 
         return features, dataset
