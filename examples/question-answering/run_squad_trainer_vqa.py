@@ -173,7 +173,7 @@ def evaluate(eval_dataset, trainer):
     cnt = 0
     for batch in tqdm(eval_dataloader, desc="Evaluating"):
         trainer.model.eval()
-        batch = tuple(t.to(trainer.args.device) for t in batch)
+        #batch = tuple(t.to(trainer.args.device) for t in batch)
         print(batch)
         cnt +=1
 
