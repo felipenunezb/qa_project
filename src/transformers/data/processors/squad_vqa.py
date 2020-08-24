@@ -581,7 +581,7 @@ class SquadProcessor(DataProcessor):
 
         return examples
 
-    def get_train_examples(self, data_dir, filename=None, to_ix_dict):
+    def get_train_examples(self, data_dir, filename=None, to_ix_dict=None):
         """
         Returns the training examples from the data directory.
 
@@ -603,7 +603,7 @@ class SquadProcessor(DataProcessor):
             input_data = json.load(reader)["data"]
         return self._create_examples(input_data, "train", to_ix_dict)
 
-    def get_dev_examples(self, data_dir, filename=None, to_ix_dict):
+    def get_dev_examples(self, data_dir, filename=None, to_ix_dict=None):
         """
         Returns the evaluation example from the data directory.
 
