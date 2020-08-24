@@ -168,7 +168,7 @@ class SquadDataset(Dataset):
         cls_index = torch.tensor(feature.cls_index, dtype=torch.long)
         p_mask = torch.tensor(feature.p_mask, dtype=torch.float)
         is_impossible = torch.tensor(feature.is_impossible, dtype=torch.float)
-        orig_ans = torch.tensor(feature.orig_ans, dtype=torch.float)
+        #orig_ans = torch.tensor(feature.orig_ans, dtype=torch.float)
 
         inputs = {
             "input_ids": input_ids,
@@ -189,8 +189,9 @@ class SquadDataset(Dataset):
         if self.mode == Split.train:
             start_positions = torch.tensor(feature.start_position, dtype=torch.long)
             end_positions = torch.tensor(feature.end_position, dtype=torch.long)
+            orig_answers = torch.tensor(feature.orig_ans, dtype=torch.long)
             inputs.update({"start_positions": start_positions, "end_positions": end_positions})
-            inputs.update({"orig_answers": orig_ans})
+            inputs.update({"orig_answers": orig_answers})
             if self.args.version_2_with_negative:
                 inputs.update({"is_impossibles": int(is_impossible)})
 
