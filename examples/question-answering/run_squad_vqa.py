@@ -472,7 +472,7 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=Fal
         torch.distributed.barrier()
 
     if output_examples:
-        return dataset, examples, features
+        return dataset, examples, features, ix_to_ans
     return dataset
 
 
