@@ -186,6 +186,7 @@ def train(args, train_dataset, model, tokenizer):
                 "token_type_ids": batch[2],
                 "start_positions": batch[3],
                 "end_positions": batch[4],
+                "orig_answers": batch[8]
             }
 
             if args.model_type in ["xlm", "roberta", "distilbert", "camembert"]:
