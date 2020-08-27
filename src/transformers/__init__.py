@@ -213,6 +213,7 @@ if is_torch_available():
         MODEL_FOR_QUESTION_ANSWERING_AV_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_AVPool_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_VQA_MAPPING,
+        MODEL_FOR_QUESTION_ANSWERING_VQAPool_MAPPING,
         MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING,
         MODEL_FOR_MULTIPLE_CHOICE_MAPPING,
     )
@@ -353,6 +354,7 @@ if is_torch_available():
         AlbertForQuestionAnsweringAV,
         AlbertForQuestionAnsweringAVPool,
         AlbertForQuestionAnsweringVQA,
+        AlbertForQuestionAnsweringVQAPool,
         AlbertForTokenClassification,
         load_tf_weights_in_albert,
         ALBERT_PRETRAINED_MODEL_ARCHIVE_LIST,

@@ -54,6 +54,7 @@ from .modeling_albert import (
     AlbertForQuestionAnsweringAV,
     AlbertForQuestionAnsweringAVPool,
     AlbertForQuestionAnsweringVQA,
+    AlbertForQuestionAnsweringVQAPool,
     AlbertForSequenceClassification,
     AlbertForTokenClassification,
     AlbertModel,
@@ -374,6 +375,14 @@ MODEL_FOR_QUESTION_ANSWERING_AVPool_MAPPING = OrderedDict(
 MODEL_FOR_QUESTION_ANSWERING_VQA_MAPPING = OrderedDict(
     [
         (AlbertConfig, AlbertForQuestionAnsweringVQA),
+        (BertConfig, BertForQuestionAnswering),
+        (ElectraConfig, ElectraForQuestionAnsweringVQA),
+    ]
+)
+
+MODEL_FOR_QUESTION_ANSWERING_VQAPool_MAPPING = OrderedDict(
+    [
+        (AlbertConfig, AlbertForQuestionAnsweringVQAPool),
         (BertConfig, BertForQuestionAnswering),
         (ElectraConfig, ElectraForQuestionAnsweringVQA),
     ]
