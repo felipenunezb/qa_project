@@ -196,6 +196,7 @@ if is_torch_available():
         AutoModelForQuestionAnsweringAV,
         AutoModelForQuestionAnsweringAVPool,
         AutoModelForQuestionAnsweringVQA,
+        AutoModelForQuestionAnsweringVQAPool,
         AutoModelWithLMHead,
         AutoModelForCausalLM,
         AutoModelForMaskedLM,
