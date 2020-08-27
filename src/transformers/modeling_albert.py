@@ -1504,8 +1504,8 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
             return_dict=return_dict,
         )
 
-        print(outputs.shape)
         print(outputs[0].shape)
+        print(outputs[1].shape)
         sequence_output = outputs[0]
 
         logits = self.qa_outputs(sequence_output)
