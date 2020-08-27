@@ -1500,12 +1500,14 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
             head_mask=head_mask,
             inputs_embeds=inputs_embeds,
             output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
+            output_hidden_states=True,#output_hidden_states,
             return_dict=return_dict,
         )
 
-        #print(outputs[0].shape)
-        #print(outputs[1].shape)
+        print(outputs[0].shape)
+        print(outputs[1].shape)
+        print(outputs[2].shape)
+
         sequence_output = outputs[0]
 
         logits = self.qa_outputs(sequence_output)
@@ -1513,7 +1515,8 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
         start_logits = start_logits.squeeze(-1)
         end_logits = end_logits.squeeze(-1)
 
-        first_word = outputs[1] #sequence_output[:, 0, :]
+        #first_word = outputs[1] #sequence_output[:, 0, :]
+        sequence_mean = torch.mean(sequence_output, dim=1)
 
         #print(f"first word {first_word.shape}")
 
@@ -1522,7 +1525,7 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
         #print(outputs[1][0])
         #print(first_word[0])
 
-        orig_ans_log = self.orig_ans_choice(first_word)
+        orig_ans_log = self.orig_ans_choice(sequence_mean)
 
         #print(f"ans log shape {orig_ans_log.shape}")
 
