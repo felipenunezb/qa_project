@@ -1515,6 +1515,8 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
 
         first_word = sequence_output[:, 0, :]
 
+        print(f"first word {first_word.shape}")
+
         orig_ans_log = self.orig_ans_choice(first_word)
 
         total_loss = None
