@@ -1517,13 +1517,11 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
 
         print(f"first word {first_word.shape}")
 
-        cnt = 0
-        for i, out in enumerate(outputs[0]):
-            if out == first_word[i]:
-                cnt += 1
-        print(f"out and first word are the same {cnt} times (out of {len(outputs[0])})")
+        print(torch.all(torch.eq(outputs[0], first_word)))
 
         orig_ans_log = self.orig_ans_choice(first_word)
+
+        print(f"ans log shape {orig_ans_log.shape}")
 
         total_loss = None
         if start_positions is not None and end_positions is not None:
