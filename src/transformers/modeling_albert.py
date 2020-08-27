@@ -1506,7 +1506,7 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
 
         print(outputs[0].shape)
         print(outputs[1].shape)
-        print(len(outputs[2]))
+        print(outputs[2][-2].shape)
 
         sequence_output = outputs[0]
 
@@ -1520,7 +1520,7 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
 
         #print(f"first word {first_word.shape}")
 
-        #print(torch.all(torch.eq(outputs[1], first_word)))
+        print(torch.all(torch.eq(outputs[0], outputs[2][-1])))
 
         #print(outputs[1][0])
         #print(first_word[0])
