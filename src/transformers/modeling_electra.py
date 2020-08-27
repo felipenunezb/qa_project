@@ -1033,7 +1033,7 @@ class ElectraForQuestionAnsweringVQAPool(ElectraPreTrainedModel):
         end_logits = end_logits.squeeze(-1)
 
         #first_word = sequence_output[:, 0, :]
-        sequence_mean = torch.mean(outputs[1][-2], dim=1) #mean of second to last layer of hidden states
+        sequence_mean = torch.mean(discriminator_hidden_states[1][-2], dim=1) #mean of second to last layer of hidden states
 
         orig_ans_log = self.orig_ans_choice(sequence_mean)
 
