@@ -1506,7 +1506,7 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
 
         print(outputs[0].shape)
         print(outputs[1].shape)
-        print(outputs[2].shape)
+        print(len(outputs[2]))
 
         sequence_output = outputs[0]
 
