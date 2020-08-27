@@ -1517,10 +1517,11 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
 
         print(f"first word {first_word.shape}")
 
-        if outputs[1] == first_word:
-            print("same")
-        else:
-            print("different")
+        cnt = 0
+        for i, out in enumerate(outputs[0]):
+            if out == first_word[i]:
+                cnt += 1
+        print(f"out and first word are the same {cnt} times (out of {len(outputs[0])})")
 
         orig_ans_log = self.orig_ans_choice(first_word)
 
