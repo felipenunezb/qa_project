@@ -1516,11 +1516,11 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
         end_logits = end_logits.squeeze(-1)
 
         #first_word = outputs[1] #sequence_output[:, 0, :]
-        sequence_mean = torch.mean(sequence_output, dim=1)
+        sequence_mean = torch.mean(outputs[2][-2], dim=1) #mean of second to last layer of hidden states
 
         #print(f"first word {first_word.shape}")
 
-        print(torch.all(torch.eq(outputs[0], outputs[2][-1])))
+        #print(torch.all(torch.eq(outputs[0], outputs[2][-1])))
 
         #print(outputs[1][0])
         #print(first_word[0])
