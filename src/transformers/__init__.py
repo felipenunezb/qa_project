@@ -392,6 +392,7 @@ if is_torch_available():
         ElectraForSequenceClassification,
         ElectraForQuestionAnswering,
         ElectraForQuestionAnsweringVQA,
+        ElectraForQuestionAnsweringVQAPool,
         ElectraModel,
         load_tf_weights_in_electra,
         ELECTRA_PRETRAINED_MODEL_ARCHIVE_LIST,

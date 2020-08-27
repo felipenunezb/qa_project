@@ -98,6 +98,7 @@ from .modeling_electra import (
     ElectraForPreTraining,
     ElectraForQuestionAnswering,
     ElectraForQuestionAnsweringVQA,
+    ElectraForQuestionAnsweringVQAPool,
     ElectraForSequenceClassification,
     ElectraForTokenClassification,
     ElectraModel,
@@ -384,7 +385,7 @@ MODEL_FOR_QUESTION_ANSWERING_VQAPool_MAPPING = OrderedDict(
     [
         (AlbertConfig, AlbertForQuestionAnsweringVQAPool),
         (BertConfig, BertForQuestionAnswering),
-        (ElectraConfig, ElectraForQuestionAnsweringVQA),
+        (ElectraConfig, ElectraForQuestionAnsweringVQAPool),
     ]
 )
 
