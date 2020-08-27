@@ -1504,8 +1504,8 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
             return_dict=return_dict,
         )
 
-        print(outputs[0].shape)
-        print(outputs[1].shape)
+        #print(outputs[0].shape)
+        #print(outputs[1].shape)
         sequence_output = outputs[0]
 
         logits = self.qa_outputs(sequence_output)
@@ -1513,18 +1513,18 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
         start_logits = start_logits.squeeze(-1)
         end_logits = end_logits.squeeze(-1)
 
-        first_word = sequence_output[:, 0, :]
+        first_word = outputs[1] #sequence_output[:, 0, :]
 
-        print(f"first word {first_word.shape}")
+        #print(f"first word {first_word.shape}")
 
-        print(torch.all(torch.eq(outputs[1], first_word)))
+        #print(torch.all(torch.eq(outputs[1], first_word)))
 
-        print(outputs[1][0])
-        print(first_word[0])
+        #print(outputs[1][0])
+        #print(first_word[0])
 
         orig_ans_log = self.orig_ans_choice(first_word)
 
-        print(f"ans log shape {orig_ans_log.shape}")
+        #print(f"ans log shape {orig_ans_log.shape}")
 
         total_loss = None
         if start_positions is not None and end_positions is not None:
