@@ -1517,7 +1517,7 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
 
         print(f"first word {first_word.shape}")
 
-        print(torch.all(torch.eq(outputs[0], first_word)))
+        print(torch.all(torch.eq(outputs[1], first_word)))
 
         orig_ans_log = self.orig_ans_choice(first_word)
 
