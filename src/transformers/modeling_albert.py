@@ -1517,6 +1517,11 @@ class AlbertForQuestionAnsweringVQAPool(AlbertPreTrainedModel):
 
         print(f"first word {first_word.shape}")
 
+        if outputs[1] == first_word:
+            print("same")
+        else:
+            print("different")
+
         orig_ans_log = self.orig_ans_choice(first_word)
 
         total_loss = None
