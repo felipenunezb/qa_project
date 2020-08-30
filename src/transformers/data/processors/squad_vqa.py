@@ -641,7 +641,7 @@ class SquadProcessor(DataProcessor):
                     answers = []
 
                     is_impossible = qa.get("is_impossible", False)
-                    orig_ans = to_ix_dict.get(qa.get("orig_ans", "unknown"))
+                    orig_ans = to_ix_dict.get(qa.get("orig_ans", "unknown"), 0)
                     if not is_impossible:
                         if is_training:
                             answer = qa["answers"][0]
