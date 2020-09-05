@@ -678,7 +678,7 @@ class SquadProcessor(DataProcessor):
             for p in img['paragraphs']:
                 for q in p['qas']:
                     orig_ans_lst.append(q['orig_ans'])
-        orig_ans_lst = set(orig_ans_lst)
+        orig_ans_lst = list(dict.fromkeys(orig_ans_lst))
 
         #answer to index
         ans_to_ix = {"unknown":0}
