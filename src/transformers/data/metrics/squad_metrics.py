@@ -691,8 +691,8 @@ def compute_predictions_logits_vqa(
             )
         prelim_predictions = sorted(prelim_predictions, key=lambda x: (x.start_logit + x.end_logit), reverse=True)
         prelim_choices = sorted(prelim_choices, key=lambda x: (x.choice_logit), reverse=True)
-        print(f"prelim choices: {len(prelim_choices)}")
-        print(prelim_choices)
+        #print(f"prelim choices: {len(prelim_choices)}")
+        #print(prelim_choices)
 
         #Choice calculations
         _NbestPrediction_choice = collections.namedtuple(  # pylint: disable=invalid-name
@@ -701,8 +701,8 @@ def compute_predictions_logits_vqa(
 
         nbest_choice = []
         for pred in prelim_choices:
-            nbest_choice.append(_NbestPrediction_choice(text=ix_to_ans_dict.get(pred.choice_index), choice_logit=pred.choice_logit))
-        print(f"nbest_choice: {len(nbest_choice)}")
+            nbest_choice.append(_NbestPrediction_choice(text=ix_to_ans_dict.get(str(pred.choice_index)), choice_logit=pred.choice_logit))
+        #print(f"nbest_choice: {len(nbest_choice)}")
         #print(nbest_choice)
         total_choice_scores = []
         best_choice_entry = None
@@ -712,7 +712,7 @@ def compute_predictions_logits_vqa(
                 print(entry)
                 if entry.text:
                     best_choice_entry = entry
-        print(f"best_choice_entry: {best_choice_entry}")
+        #print(f"best_choice_entry: {best_choice_entry}")
 
         choice_probs = _compute_softmax(total_choice_scores)
 
