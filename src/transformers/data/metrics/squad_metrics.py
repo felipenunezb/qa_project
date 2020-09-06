@@ -702,11 +702,13 @@ def compute_predictions_logits_vqa(
         for pred in prelim_choices:
             nbest_choice.append(_NbestPrediction_choice(text=ix_to_ans_dict.get(pred.choice_index), choice_logit=pred.choice_logit))
         print(f"nbest_choice: {len(nbest_choice)}")
+        print(nbest_choice)
         total_choice_scores = []
         best_choice_entry = None
         for entry in nbest_choice:
             total_choice_scores.append(entry.choice_logit)
             if not best_choice_entry:
+                print(entry)
                 if entry.text:
                     best_choice_entry = entry
         print(f"best_choice_entry: {best_choice_entry}")
