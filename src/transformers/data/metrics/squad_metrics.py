@@ -705,7 +705,6 @@ def compute_predictions_logits_vqa(
         for entry in nbest_choice:
             total_choice_scores.append(entry.choice_logit)
             if not best_choice_entry:
-                print(entry)
                 if entry.text:
                     best_choice_entry = entry
 
