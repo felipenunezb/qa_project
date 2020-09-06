@@ -1051,6 +1051,7 @@ class ElectraForQuestionAnsweringVQAPool(ElectraPreTrainedModel):
             start_positions.clamp_(0, ignored_index)
             end_positions.clamp_(0, ignored_index)
             #orig_answers.clamp_(0, ignored_index)
+            print(orig_answers.size())
 
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
             start_loss = loss_fct(start_logits, start_positions)
