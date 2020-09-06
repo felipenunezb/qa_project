@@ -1164,7 +1164,11 @@ class ElectraForQuestionAnsweringVQAPool_MultiVote(ElectraPreTrainedModel):
         
         sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4))
 
+        print(sequence_mean.size())
+
         orig_ans_log = self.orig_ans_choice(sequence_mean)
+
+        print(orig_ans_log.size())
 
         total_loss = None
         if start_positions is not None and end_positions is not None:
