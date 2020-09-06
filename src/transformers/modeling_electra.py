@@ -1153,7 +1153,7 @@ class ElectraForQuestionAnsweringVQAPool_MultiVote(ElectraPreTrainedModel):
         #mean of last layer of hidden states
         voter_2 = torch.mean(discriminator_hidden_states[1][-1], dim=1)
         #mean of both voters
-        voter_3 = torch.mean(voter_1, voter_2)
+        voter_3 = torch.mean(torch.stack([voter_1, voter2]), dim=0)
         #max of both voters
         voter_4 = torch.max(voter_1, voter_2)
 
