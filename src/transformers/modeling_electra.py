@@ -1162,7 +1162,7 @@ class ElectraForQuestionAnsweringVQAPool_MultiVote(ElectraPreTrainedModel):
         print(voter_3.size(), '\n')
         print(voter_4.size(), '\n')
         
-        sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4))
+        sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4), dim=1)
 
         print(sequence_mean.size())
 
