@@ -669,10 +669,16 @@ class SquadProcessor(DataProcessor):
         Return Answer to ID and ID to Answer dictionaries
         '''
         with open(
-            os.path.join(data_dir, self.train_file if filename is None else filename), "r", encoding="utf-8"
+            os.path.join(data_dir, "ans_to_ix.json"), "r", encoding="utf-8"
         ) as reader:
-            input_data = json.load(reader)["data"]
+            ans_to_ix = json.load(reader)
+
+        with open(
+            os.path.join(data_dir, "ix_to_ans.json"), "r", encoding="utf-8"
+        ) as reader:
+            ix_to_ans = json.load(reader)
         
+        '''
         orig_ans_lst = []
         for img in input_data:
             for p in img['paragraphs']:
@@ -691,6 +697,7 @@ class SquadProcessor(DataProcessor):
         for ans, ix in ans_to_ix.items():
             if ix not in ix_to_ans:
                 ix_to_ans[ix] = ans
+        '''
 
         return ans_to_ix, ix_to_ans
 
