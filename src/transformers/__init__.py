@@ -197,6 +197,7 @@ if is_torch_available():
         AutoModelForQuestionAnsweringAVPool,
         AutoModelForQuestionAnsweringVQA,
         AutoModelForQuestionAnsweringVQAPool,
+        AutoModelForQuestionAnsweringVQAPool_MultiVote,
         AutoModelWithLMHead,
         AutoModelForCausalLM,
         AutoModelForMaskedLM,
@@ -215,6 +216,7 @@ if is_torch_available():
         MODEL_FOR_QUESTION_ANSWERING_AVPool_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_VQA_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_VQAPool_MAPPING,
+        MODEL_FOR_QUESTION_ANSWERING_VQAPool_MultiVote_MAPPING,
         MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING,
         MODEL_FOR_MULTIPLE_CHOICE_MAPPING,
     )
@@ -393,6 +395,7 @@ if is_torch_available():
         ElectraForQuestionAnswering,
         ElectraForQuestionAnsweringVQA,
         ElectraForQuestionAnsweringVQAPool,
+        ElectraForQuestionAnsweringVQAPool_MultiVote,
         ElectraModel,
         load_tf_weights_in_electra,
         ELECTRA_PRETRAINED_MODEL_ARCHIVE_LIST,
