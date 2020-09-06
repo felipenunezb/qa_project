@@ -692,6 +692,7 @@ def compute_predictions_logits_vqa(
         prelim_predictions = sorted(prelim_predictions, key=lambda x: (x.start_logit + x.end_logit), reverse=True)
         prelim_choices = sorted(prelim_choices, key=lambda x: (x.choice_logit), reverse=True)
         print(f"prelim choices: {len(prelim_choices)}")
+        print(prelim_choices)
 
         #Choice calculations
         _NbestPrediction_choice = collections.namedtuple(  # pylint: disable=invalid-name
@@ -702,7 +703,7 @@ def compute_predictions_logits_vqa(
         for pred in prelim_choices:
             nbest_choice.append(_NbestPrediction_choice(text=ix_to_ans_dict.get(pred.choice_index), choice_logit=pred.choice_logit))
         print(f"nbest_choice: {len(nbest_choice)}")
-        print(nbest_choice)
+        #print(nbest_choice)
         total_choice_scores = []
         best_choice_entry = None
         for entry in nbest_choice:
