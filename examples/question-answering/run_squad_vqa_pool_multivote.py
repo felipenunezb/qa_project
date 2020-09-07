@@ -306,6 +306,7 @@ def evaluate(args, model, tokenizer, prefix=""):
                 del inputs["token_type_ids"]
 
             feature_indices = batch[3]
+            print(len(feature_indices))
 
             # XLNet and XLM use more arguments for their predictions
             if args.model_type in ["xlnet", "xlm"]:
@@ -342,7 +343,7 @@ def evaluate(args, model, tokenizer, prefix=""):
                 )
 
             else:
-                start_logits, end_logits, choice_logits, hidden_states = output
+                start_logits, end_logits, choice_logits, _ = output
                 result = SquadResult(unique_id, start_logits, end_logits, choice_logits)
 
             all_results.append(result)
