@@ -1671,9 +1671,9 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         end_logits = end_logits.squeeze(-1)
 
         #mean of second to last layer of hidden states
-        voter_1 = torch.mean(sequence_output[2][-2], dim=1) 
+        voter_1 = torch.mean(outputs[2][-2], dim=1) 
         #mean of last layer of hidden states
-        voter_2 = torch.mean(sequence_output[2][-1], dim=1)
+        voter_2 = torch.mean(outputs[2][-1], dim=1)
         #mean of both voters
         voter_3 = torch.mean(torch.stack([voter_1, voter_2]), dim=0)
         #max of both voters
