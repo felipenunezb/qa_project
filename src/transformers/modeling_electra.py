@@ -890,6 +890,7 @@ class ElectraForQuestionAnsweringVQA(ElectraPreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        weights_tensor=None,
     ):
         r"""
         start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
@@ -943,7 +944,11 @@ class ElectraForQuestionAnsweringVQA(ElectraPreTrainedModel):
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
             start_loss = loss_fct(start_logits, start_positions)
             end_loss = loss_fct(end_logits, end_positions)
-            choice_loss = loss_fct(orig_ans_log, orig_answers)
+            if weights_tensor:
+                loss_fct_c = CrossEntropyLoss(weight = weights_tensor)
+            else:
+                loss_fct_c = CrossEntropyLoss()
+            choice_loss = loss_fct_c(orig_ans_log, orig_answers)
             total_loss = (start_loss + end_loss + choice_loss) / 3
 
         if not return_dict:
@@ -1001,6 +1006,7 @@ class ElectraForQuestionAnsweringVQAPool(ElectraPreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        weights_tensor=None,
     ):
         r"""
         start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
@@ -1057,7 +1063,11 @@ class ElectraForQuestionAnsweringVQAPool(ElectraPreTrainedModel):
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
             start_loss = loss_fct(start_logits, start_positions)
             end_loss = loss_fct(end_logits, end_positions)
-            choice_loss = loss_fct(orig_ans_log, orig_answers)
+            if weights_tensor:
+                loss_fct_c = CrossEntropyLoss(weight = weights_tensor)
+            else:
+                loss_fct_c = CrossEntropyLoss()
+            choice_loss = loss_fct_c(orig_ans_log, orig_answers)
             total_loss = (start_loss + end_loss + choice_loss) / 3
 
         if not return_dict:
@@ -1117,6 +1127,7 @@ class ElectraForQuestionAnsweringVQAPool_MultiVote(ElectraPreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        weights_tensor=None,
     ):
         r"""
         start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
@@ -1187,7 +1198,11 @@ class ElectraForQuestionAnsweringVQAPool_MultiVote(ElectraPreTrainedModel):
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
             start_loss = loss_fct(start_logits, start_positions)
             end_loss = loss_fct(end_logits, end_positions)
-            choice_loss = loss_fct(orig_ans_log, orig_answers)
+            if weights_tensor:
+                loss_fct_c = CrossEntropyLoss(weight = weights_tensor)
+            else:
+                loss_fct_c = CrossEntropyLoss()
+            choice_loss = loss_fct_c(orig_ans_log, orig_answers)
             total_loss = (start_loss + end_loss + choice_loss) / 3
 
         if not return_dict:
