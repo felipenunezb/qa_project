@@ -306,7 +306,6 @@ def evaluate(args, model, tokenizer, prefix=""):
                 del inputs["token_type_ids"]
 
             feature_indices = batch[3]
-            print(len(feature_indices))
 
             # XLNet and XLM use more arguments for their predictions
             if args.model_type in ["xlnet", "xlm"]:
@@ -317,10 +316,10 @@ def evaluate(args, model, tokenizer, prefix=""):
                         {"langs": (torch.ones(batch[0].shape, dtype=torch.int64) * args.lang_id).to(args.device)}
                     )
             outputs = model(**inputs)
-            print(len(outputs))
-            print(f"out_0 len: {len(outputs[0][0])}")
-            print(f"out_1 len: {len(outputs[0][1])}")
-            print(f"out_2 len: {len(outputs[0][2])}")
+            #print(len(outputs))
+            #print(f"out_0 len: {len(outputs[0][0])}")
+            #print(f"out_1 len: {len(outputs[0][1])}")
+            #print(f"out_2 len: {len(outputs[0][2])}")
 
         for i, feature_index in enumerate(feature_indices):
             eval_feature = features[feature_index.item()]
