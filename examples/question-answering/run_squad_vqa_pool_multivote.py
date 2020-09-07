@@ -318,7 +318,7 @@ def evaluate(args, model, tokenizer, prefix=""):
                     )
             outputs = model(**inputs)
             print(len(outputs))
-            print(len(output) for output in outputs)
+            print(len(outputs[0])
 
         for i, feature_index in enumerate(feature_indices):
             eval_feature = features[feature_index.item()]
