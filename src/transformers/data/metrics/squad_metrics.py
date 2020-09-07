@@ -808,7 +808,10 @@ def compute_predictions_logits_vqa(
                 #all_predictions[example.qas_id] = ""
                 all_predictions[example.qas_id] = best_choice_entry.text
             else:
-                all_predictions[example.qas_id] = best_non_null_entry.text
+                if best_non_null_entry.probability > best_choice_entry.probability:
+                    all_predictions[example.qas_id] = best_non_null_entry.text
+                else:
+                    all_predictions[example.qas_id] = best_choice_entry.text
         all_nbest_json[example.qas_id] = nbest_json
 
     if output_prediction_file:
