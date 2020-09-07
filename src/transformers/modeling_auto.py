@@ -74,6 +74,7 @@ from .modeling_bert import (
     BertForTokenClassification,
     BertLMHeadModel,
     BertModel,
+    BertForQuestionAnsweringVQAPool_MultiVote,
 )
 from .modeling_camembert import (
     CamembertForMaskedLM,
@@ -393,7 +394,7 @@ MODEL_FOR_QUESTION_ANSWERING_VQAPool_MAPPING = OrderedDict(
 MODEL_FOR_QUESTION_ANSWERING_VQAPool_MultiVote_MAPPING = OrderedDict(
     [
         (AlbertConfig, AlbertForQuestionAnsweringVQAPool),
-        (BertConfig, BertForQuestionAnswering),
+        (BertConfig, BertForQuestionAnsweringVQAPool_MultiVote),
         (ElectraConfig, ElectraForQuestionAnsweringVQAPool_MultiVote),
     ]
 )
