@@ -1196,15 +1196,12 @@ class ElectraForQuestionAnsweringVQAPool_MultiVote(ElectraPreTrainedModel):
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
             start_loss = loss_fct(start_logits, start_positions)
             end_loss = loss_fct(end_logits, end_positions)
-            if weights_tensor:
-                loss_fct_c = CrossEntropyLoss(weight = weights_tensor)
-            else:
-                loss_fct_c = CrossEntropyLoss()
+            loss_fct_c = CrossEntropyLoss()
             choice_loss = loss_fct_c(orig_ans_log, orig_answers)
             total_loss = (start_loss + end_loss + choice_loss) / 3
 
         if not return_dict:
-            output = (start_logits, end_logits, orig_ans_log,) + discriminator_hidden_states[1:]
+            output = (start_logits, end_logits, orig_ans_log,) #+ discriminator_hidden_states[1:]
             return ((total_loss,) + output) if total_loss is not None else output
 
         return QuestionAnsweringModelOutput(
