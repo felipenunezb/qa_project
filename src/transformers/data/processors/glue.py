@@ -564,23 +564,23 @@ class SQuADProcessor(DataProcessor):
             str(tensor_dict["label"].numpy()),
         )
 
-    def get_train_examples(self, data_dir):
+    def get_train_examples(self, data_dir, to_ix_dict=None):
         """See base class."""
-        return self._create_examples(self._read_squad(os.path.join(data_dir, "train-v2.0.json")), "train")
+        return self._create_examples(self._read_squad(os.path.join(data_dir, "train-v2.0.json")), "train", to_ix_dict)
 
-    def get_dev_examples(self, data_dir):
+    def get_dev_examples(self, data_dir, to_ix_dict=None):
         """See base class."""
-        return self._create_examples(self._read_squad(os.path.join(data_dir, "dev-v2.0.json")), "dev")
+        return self._create_examples(self._read_squad(os.path.join(data_dir, "dev-v2.0.json")), "dev", to_ix_dict)
 
-    def get_test_examples(self, data_dir):
+    def get_test_examples(self, data_dir, to_ix_dict=None):
         """See base class."""
-        return self._create_examples(self._read_squad(os.path.join(data_dir, "test-v2.0.json")), "test")
+        return self._create_examples(self._read_squad(os.path.join(data_dir, "test-v2.0.json")), "test", to_ix_dict)
 
-    def get_labels(self):
+    def get_labels(self, to_ix_dict=None):
         """See base class."""
-        return ["0", "1"]
+        return list(to_ix_dict.keys())#["0", "1"]
 
-    def _create_examples(self, input_data, set_type, answer_pred=None):
+    def _create_examples(self, input_data, set_type, to_ix_dict=None, answer_pred=None):
         examples = []
         for entry in input_data:
             for paragraph in entry["paragraphs"]:
@@ -588,14 +588,27 @@ class SQuADProcessor(DataProcessor):
                 for qa in paragraph["qas"]:
                     qas_id = qa["id"]
                     question_text = qa["question"]
-                    is_impossible = qa["is_impossible"]
-                    if is_impossible:
-                        label = "1"
-                    else:
-                        label = "0"
+                    answer_text = qa["orig_ans"]
+                    label = to_ix_dict.get(answer_text, 0)
                     examples.append(
                         InputExample(guid=qas_id, text_a=question_text, text_b=context_text, label=label))
         return examples
+
+    def create_dicts(self, data_dir, filename=None):
+        '''
+        Return Answer to ID and ID to Answer dictionaries
+        '''
+        with open(
+            os.path.join(data_dir, "ans_to_ix.json"), "r", encoding="utf-8"
+        ) as reader:
+            ans_to_ix = json.load(reader)
+
+        with open(
+            os.path.join(data_dir, "ix_to_ans.json"), "r", encoding="utf-8"
+        ) as reader:
+            ix_to_ans = json.load(reader)
+
+        return ans_to_ix, ix_to_ans
 
 glue_tasks_num_labels = {
     "cola": 2,
@@ -607,7 +620,7 @@ glue_tasks_num_labels = {
     "qnli": 2,
     "rte": 2,
     "wnli": 2,
-    "squad": 2,
+    "squad": 2914,
 }
 
 glue_processors = {

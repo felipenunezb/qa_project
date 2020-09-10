@@ -88,7 +88,9 @@ class GlueDataset(Dataset):
                 mode.value, tokenizer.__class__.__name__, str(args.max_seq_length), args.task_name,
             ),
         )
-        label_list = self.processor.get_labels()
+        ans_to_ix, ix_to_ans = self.processor.create_dicts(args.data_dir)
+        label_list = list(ans_to_ix.values())
+        #label_list = self.processor.get_labels()
         if args.task_name in ["mnli", "mnli-mm"] and tokenizer.__class__ in (
             RobertaTokenizer,
             RobertaTokenizerFast,
@@ -115,11 +117,11 @@ class GlueDataset(Dataset):
                 logger.info(f"Creating features from dataset file at {args.data_dir}")
 
                 if mode == Split.dev:
-                    examples = self.processor.get_dev_examples(args.data_dir)
+                    examples = self.processor.get_dev_examples(args.data_dir, to_ix_dict=ans_to_ix)
                 elif mode == Split.test:
-                    examples = self.processor.get_test_examples(args.data_dir)
+                    examples = self.processor.get_test_examples(args.data_dir, to_ix_dict=ans_to_ix)
                 else:
-                    examples = self.processor.get_train_examples(args.data_dir)
+                    examples = self.processor.get_train_examples(args.data_dir, to_ix_dict=ans_to_ix)
                 if limit_length is not None:
                     examples = examples[:limit_length]
                 self.features = glue_convert_examples_to_features(
