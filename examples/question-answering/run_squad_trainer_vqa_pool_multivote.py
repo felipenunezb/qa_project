@@ -143,7 +143,7 @@ def main():
     )
 
     #If given, load the scene file
-    processor = SquadV2Processor() if args.version_2_with_negative else SquadV1Processor()
+    processor = SquadV2Processor() if data_args.version_2_with_negative else SquadV1Processor()
 
     scene_dataset = (processor.load_scene_graph(data_args.data_dir, data_args.scene_file)
         if data_args.scene_file

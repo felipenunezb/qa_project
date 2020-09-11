@@ -1638,6 +1638,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        scene_dataset=None,
     ):
         r"""
         start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
@@ -1664,6 +1665,9 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         )
 
         sequence_output = outputs[0]
+
+        if scene_dataset:
+            print(f"scene dataset: {list(scene_dataset.values())[0]}")
 
         logits = self.qa_outputs(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)

@@ -743,6 +743,9 @@ class Trainer:
         inputs = self._prepare_inputs(inputs, model)
         #print(inputs)
 
+        #add scene data
+        inputs = inputs + self.scene_data
+
         if self.args.fp16 and _use_native_amp:
             with autocast():
                 outputs = model(**inputs)
