@@ -143,12 +143,14 @@ def main():
     )
 
     #If given, load the scene file
-    if data_args.scene_file:
-        processor = SquadV2Processor() if args.version_2_with_negative else SquadV1Processor()
-        scene_dataset = processor.load_scene_graph(data_args.data_dir, data_args.scene_file)
+    processor = SquadV2Processor() if args.version_2_with_negative else SquadV1Processor()
+
+    scene_dataset = (processor.load_scene_graph(data_args.data_dir, data_args.scene_file)
+        if data_args.scene_file
+        else None)
 
     # Initialize our Trainer
-    trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset, eval_dataset=eval_dataset,)
+    trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset, eval_dataset=eval_dataset, scene_dataset=scene_dataset,)
 
     # Training
     if training_args.do_train:
