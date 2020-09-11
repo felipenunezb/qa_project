@@ -701,6 +701,18 @@ class SquadProcessor(DataProcessor):
 
         return ans_to_ix, ix_to_ans
 
+        def load_scene_graph(self, data_dir, filename=None):
+        '''
+        Return Answer to ID and ID to Answer dictionaries
+        '''
+        
+        with open(
+            os.path.join(data_dir, "vg_scene_graph.json"), "r", encoding="utf-8"
+        ) as reader:
+            sceneDict = json.load(reader)
+
+        return sceneDict
+
 
 
 class SquadV1Processor(SquadProcessor):
