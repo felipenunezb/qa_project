@@ -677,32 +677,13 @@ class SquadProcessor(DataProcessor):
             os.path.join(data_dir, "ix_to_ans.json"), "r", encoding="utf-8"
         ) as reader:
             ix_to_ans = json.load(reader)
-        
-        '''
-        orig_ans_lst = []
-        for img in input_data:
-            for p in img['paragraphs']:
-                for q in p['qas']:
-                    orig_ans_lst.append(q['orig_ans'])
-        orig_ans_lst = list(dict.fromkeys(orig_ans_lst))
-
-        #answer to index
-        ans_to_ix = {"unknown":0}
-        for ans in orig_ans_lst:
-            if ans not in ans_to_ix:
-                ans_to_ix[ans] = len(ans_to_ix)
-
-        #index to answer
-        ix_to_ans = {}
-        for ans, ix in ans_to_ix.items():
-            if ix not in ix_to_ans:
-                ix_to_ans[ix] = ans
-        '''
 
         return ans_to_ix, ix_to_ans
 
     def load_scene_graph(self, data_dir, filename=None):
-        
+        '''
+        Return Answer to ID and ID to Answer dictionaries
+        '''
         with open(
             os.path.join(data_dir, "vg_scene_graph.json"), "r", encoding="utf-8"
         ) as reader:
