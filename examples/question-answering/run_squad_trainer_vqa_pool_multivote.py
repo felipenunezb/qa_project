@@ -28,7 +28,7 @@ from transformers import AutoConfig, AutoModelForQuestionAnsweringVQAPool_MultiV
 from transformers import SquadDataTrainingArguments as DataTrainingArguments
 from transformers import Trainer, TrainingArguments
 from transformers import squad_convert_examples_to_features
-from transformers.data.processors.squad import SquadResult, SquadV1Processor, SquadV2Processor
+from transformers.data.processors.squad import SquadResult, SquadV1Processor, SquadV2Processor, SquadProcessor
 
 
 logger = logging.getLogger(__name__)
@@ -143,7 +143,7 @@ def main():
     )
 
     #If given, load the scene file
-    processor = SquadV2Processor() if data_args.version_2_with_negative else SquadV1Processor()
+    processor = SquadProcessor()
 
     scene_dataset = (processor.load_scene_graph(data_args.data_dir, data_args.scene_file)
         if data_args.scene_file
