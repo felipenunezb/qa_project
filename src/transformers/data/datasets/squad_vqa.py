@@ -75,6 +75,10 @@ class SquadDataTrainingArguments:
             "help": "language id of input for language-specific xlm models (see tokenization_xlm.PRETRAINED_INIT_CONFIGURATION)"
         },
     )
+    scene_file: str = field(
+        default=None, metadata={"help": "The input scene graph file. Should contain the .json files for the SQuAD task."}
+    )
+
     threads: int = field(default=1, metadata={"help": "multiple threads for converting example to features"})
 
 
