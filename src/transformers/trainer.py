@@ -742,7 +742,7 @@ class Trainer:
         model.train()
         inputs = self._prepare_inputs(inputs, model)
         #print(inputs)
-        dict_upd = {scene_dataset : self.scene_data}
+        dict_upd = {'scene_dataset' : self.scene_data}
         #add scene data
         inputs.update(dict_upd)
 
