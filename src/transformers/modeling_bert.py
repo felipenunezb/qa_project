@@ -2130,7 +2130,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         self.decoder = BertDirectedAttention(config)
         self.qa_outputs_start = nn.Linear(config.hidden_size, 1)
         self.qa_outputs_end = nn.Linear(config.hidden_size,1)
-        self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(config.hidden_size, self.num_choices))
+        self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(3*config.hidden_size, self.num_choices))
 
         self.conv1d_1 = nn.Conv1d(in_channels=2*config.hidden_size,out_channels=3*config.hidden_size//2,kernel_size=3,padding=1)
         self.conv1d_2 = nn.Conv1d(in_channels=3*config.hidden_size//2,out_channels=config.hidden_size,kernel_size=3,padding=1)
@@ -2256,8 +2256,13 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
 
         sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4), dim=1)
         '''
+        voter_1 = torch.mean(sequence_output1d, dim=1) 
+        voter_2 = torch.mean(encoded_skip_start[-1], dim=1) 
+        voter_3 = torch.mean(seq_end, dim=1) 
 
-        orig_ans_log = self.orig_ans_choice(sequence_output1d)
+        sequence_mean = torch.cat((voter_1, voter_2, voter_3), dim=1)
+
+        orig_ans_log = self.orig_ans_choice(sequence_mean)
         print(f"orig_ans_log: {orig_ans_log.shape}")
 
         total_loss = None
