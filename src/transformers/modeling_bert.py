@@ -2213,6 +2213,8 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         #Skip connection from Bert Layer
         sequence_output1d = self.LayerNorm(sequence_output1d + sequence_output)
 
+        print(f"sequence_output1d: {sequence_output1d.shape}")
+
         #Flatten LSTM parameters for memory optimization
         self.endLSTM.flatten_parameters()
 
@@ -2224,6 +2226,9 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         seq_end,_  = self.endLSTM(for_end)
         start_logits = self.qa_outputs_start(encoded_skip_start[-1])
         end_logits = self.qa_outputs_end(seq_end)
+
+        print(f"encoded_skip_start: {encoded_skip_start[-1].shape}")
+        print(f"seq_end: {seq_end.shape}")
 
         #Logits!
         start_logits = start_logits.squeeze(-1)
@@ -2250,6 +2255,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         '''
 
         orig_ans_log = self.orig_ans_choice(sequence_output1d)
+        print("orig_ans_log: {orig_ans_log.shape}")
 
         total_loss = None
         if start_positions is not None and end_positions is not None:
@@ -2268,12 +2274,12 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
             start_loss = loss_fct(start_logits, start_positions)
             end_loss = loss_fct(end_logits, end_positions)
-            loss_fct_c = CrossEntropyLoss()
-            choice_loss = loss_fct_c(orig_ans_log, orig_answers)
-            total_loss = (start_loss + end_loss + choice_loss) / 3
+            #loss_fct_c = CrossEntropyLoss()
+            #choice_loss = loss_fct_c(orig_ans_log, orig_answers)
+            total_loss = (start_loss + end_loss) / 2
 
         if not return_dict:
-            output = (start_logits, end_logits, orig_ans_log,) #+ outputs[2:]
+            output = (start_logits, end_logits, ) #+ outputs[2:]
             return ((total_loss,) + output) if total_loss is not None else output
 
         return QuestionAnsweringModelOutput(
