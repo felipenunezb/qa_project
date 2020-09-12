@@ -2280,7 +2280,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
             end_positions.clamp_(0, ignored_index)
             orig_answers.clamp_(0, ignored_index)
 
-            print(f"orig_answers: {orig_answers.shape}")
+            #print(f"orig_answers: {orig_answers.shape}")
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
             start_loss = loss_fct(start_logits, start_positions)
             end_loss = loss_fct(end_logits, end_positions)
