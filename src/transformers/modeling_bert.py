@@ -2080,6 +2080,9 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
 
         orig_ans_log = self.orig_ans_choice(sequence_mean)
 
+        print(f"orig_answers: {orig_answers.shape}")
+        print(f"orig_ans_log: {orig_ans_log.shape}")
+
         total_loss = None
         if start_positions is not None and end_positions is not None:
             # If we are on multi-GPU, split add a dimension
@@ -2281,7 +2284,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
             total_loss = (start_loss + end_loss + choice_loss) / 3
 
         if not return_dict:
-            output = (start_logits, end_logits, ) #+ outputs[2:]
+            output = (start_logits, end_logits, choice_loss) #+ outputs[2:]
             return ((total_loss,) + output) if total_loss is not None else output
 
         return QuestionAnsweringModelOutput(
