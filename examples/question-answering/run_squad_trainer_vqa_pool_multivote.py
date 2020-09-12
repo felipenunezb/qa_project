@@ -145,6 +145,8 @@ def main():
     #If given, load the scene file
     processor = SquadProcessor()
 
+    ans_to_ix, ix_to_ans = processor.create_dicts(data_args.data_dir)
+    #aaaa
     scene_dataset = (processor.load_scene_graph(data_args.data_dir, data_args.scene_file)
         if data_args.scene_file
         else None)
