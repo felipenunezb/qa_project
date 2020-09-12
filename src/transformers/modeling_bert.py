@@ -1128,7 +1128,7 @@ class BertModel(BertPreTrainedModel):
         )
 
 
-class BertModelS(PreTrainedBertModel):
+class BertModelS(BertPreTrainedModel):
     """BERT model ("Bidirectional Embedding Representations from a Transformer").
     Params:
         config: a BertConfig class instance with the configuration to build a new model
