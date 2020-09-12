@@ -666,67 +666,56 @@ class BertLayer(nn.Module):
         layer_output = self.output(intermediate_output, attention_output)
         return layer_output
 
+class BertLayerS(nn.Module):
+    def __init__(self, config):
+        super(BertLayerS, self).__init__()
+        self.attention = BertAttention(config)
+        self.intermediate = BertIntermediate(config)
+        self.output = BertOutput(config)
+
+    def forward(self, hidden_states, attention_mask):
+        attention_output = self.attention(hidden_states, attention_mask)
+        #print('attention_output is',attention_output.shape)
+        intermediate_output = self.intermediate(attention_output)
+        #print('intermediate_output is',intermediate_output.shape)
+        layer_output = self.output(intermediate_output, attention_output)
+        #print('layer_output is',layer_output.shape)
+        return layer_output
 
 class BertSkipEncoder(nn.Module):
     def __init__(self, config):
-        super().__init__()
-        self.config = config
-        self.layer = nn.ModuleList([BertLayer(config) for _ in range(1)])
+        super(BertSkipEncoder, self).__init__()
+        layer = BertLayerS(config)
+        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(1)])
 
-    def forward(
-        self,
-        hidden_states,
-        attention_mask=None,
-        head_mask=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        output_attentions=False,
-        output_hidden_states=False,
-        return_dict=False,
-    ):
-        all_hidden_states = () if output_hidden_states else None
-        all_attentions = () if output_attentions else None
-        for i, layer_module in enumerate(self.layer):
-            if output_hidden_states:
-                all_hidden_states = all_hidden_states + (hidden_states,)
+    def forward(self, hidden_states, attention_mask, output_all_encoded_layers=True):
+        all_encoder_layers = []
+        for layer_module in self.layer:
+            hidden_states = layer_module(hidden_states, attention_mask)
+            #print('size of hidden_states in BertEncoder is',hidden_states.shape)
+            if output_all_encoded_layers:
+                all_encoder_layers.append(hidden_states)
+        if not output_all_encoded_layers:
+            all_encoder_layers.append(hidden_states)
+        return all_encoder_layers
 
-            if getattr(self.config, "gradient_checkpointing", False):
+class BertEncoderS(nn.Module):
+    def __init__(self, config):
+        super(BertEncoderS, self).__init__()
+        layer = BertLayerS(config)
+        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(config.num_hidden_layers)])
 
-                def create_custom_forward(module):
-                    def custom_forward(*inputs):
-                        return module(*inputs, output_attentions)
+    def forward(self, hidden_states, attention_mask, output_all_encoded_layers=True):
+        all_encoder_layers = []
+        for layer_module in self.layer:
+            hidden_states = layer_module(hidden_states, attention_mask)
+            #print('size of hidden_states in BertEncoder is',hidden_states.shape)
+            if output_all_encoded_layers:
+                all_encoder_layers.append(hidden_states)
+        if not output_all_encoded_layers:
+            all_encoder_layers.append(hidden_states)
+        return all_encoder_layers
 
-                    return custom_forward
-
-                layer_outputs = torch.utils.checkpoint.checkpoint(
-                    create_custom_forward(layer_module),
-                    hidden_states,
-                    attention_mask,
-                    head_mask[i],
-                    encoder_hidden_states,
-                    encoder_attention_mask,
-                )
-            else:
-                layer_outputs = layer_module(
-                    hidden_states,
-                    attention_mask,
-                    head_mask[i],
-                    encoder_hidden_states,
-                    encoder_attention_mask,
-                    output_attentions,
-                )
-            hidden_states = layer_outputs[0]
-            if output_attentions:
-                all_attentions = all_attentions + (layer_outputs[1],)
-
-        if output_hidden_states:
-            all_hidden_states = all_hidden_states + (hidden_states,)
-
-        if not return_dict:
-            return tuple(v for v in [hidden_states, all_hidden_states, all_attentions] if v is not None)
-        return BaseModelOutput(
-            last_hidden_state=hidden_states, hidden_states=all_hidden_states, attentions=all_attentions
-        )
 
 class BertEncoder(nn.Module):
     def __init__(self, config):
@@ -1174,7 +1163,7 @@ class BertModelS(BertPreTrainedModel):
     def __init__(self, config):
         super(BertModelS, self).__init__(config)
         self.embeddings = BertEmbeddings(config)
-        self.encoder = BertEncoder(config)
+        self.encoder = BertEncoderS(config)
         self.pooler = BertPooler(config)
         self.init_weights()
         #self.apply(self.init_bert_weights)
@@ -1229,33 +1218,20 @@ class BertModelS(BertPreTrainedModel):
         qextended_attention_mask = qextended_attention_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility
         qextended_attention_mask = (1.0 - qextended_attention_mask) * -10000.0
 
-        head_mask = self.get_head_mask(head_mask, self.config.num_hidden_layers)
-
         #raise SystemExit
         embedding_output = self.embeddings(input_ids, token_type_ids)
-        #encoded_layers = self.encoder(embedding_output,
-        #                              extended_attention_mask,
-        #                              output_hidden_states=output_hidden_states)
-        encoder_extended_attention_mask = None
-        encoder_outputs = self.encoder(
-            embedding_output,
-            attention_mask=extended_attention_mask,
-            head_mask=head_mask,
-            encoder_hidden_states=encoder_hidden_states,
-            encoder_attention_mask=encoder_extended_attention_mask,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-
+        encoded_layers = self.encoder(embedding_output,
+                                      extended_attention_mask,
+                                      encoder_hidden_states=encoder_hidden_states)
         #print('*** encoded_layers is',encoded_layers.shape)
-        sequence_output = encoder_outputs[0]
+        sequence_output = encoded_layers[-1]
 
-        #pooled_output = self.pooler(sequence_output)
-        if not output_hidden_states:
-            encoded_layers = sequence_output
+        #print('*** sequence_output is',sequence_output.shape)
+
+        pooled_output = self.pooler(sequence_output)
+        if not encoder_hidden_states:
+            encoded_layers = encoded_layers[-1]
         return extended_attention_mask,cextended_attention_mask,qextended_attention_mask,sequence_output#encoded_layers, pooled_output
-
 
 @add_start_docstrings(
     """Bert Model with two heads on top as done during the pre-training: a `masked language modeling` head and
