@@ -1148,13 +1148,13 @@ class BertModelS(BertPreTrainedModel):
             selected in [0, 1]. It's a mask to be used if the input sequence length is smaller than the max
             input sequence length in the current batch. It's the mask that we typically use for attention when
             a batch has varying length sentences.
-        `output_all_encoded_layers`: boolean which controls the content of the `encoded_layers` output as described below. Default: `True`.
+        `output_hidden_states`: boolean which controls the content of the `encoded_layers` output as described below. Default: `True`.
     Outputs: Tuple of (encoded_layers, pooled_output)
-        `encoded_layers`: controled by `output_all_encoded_layers` argument:
-            - `output_all_encoded_layers=True`: outputs a list of the full sequences of encoded-hidden-states at the end
+        `encoded_layers`: controled by `output_hidden_states` argument:
+            - `output_hidden_states=True`: outputs a list of the full sequences of encoded-hidden-states at the end
                 of each attention block (i.e. 12 full sequences for BERT-base, 24 for BERT-large), each
                 encoded-hidden-state is a torch.FloatTensor of size [batch_size, sequence_length, hidden_size],
-            - `output_all_encoded_layers=False`: outputs only the full sequence of hidden-states corresponding
+            - `output_hidden_states=False`: outputs only the full sequence of hidden-states corresponding
                 to the last attention block of shape [batch_size, sequence_length, hidden_size],
         `pooled_output`: a torch.FloatTensor of size [batch_size, hidden_size] which is the output of a
             classifier pretrained on top of the hidden state associated to the first character of the
@@ -1179,7 +1179,7 @@ class BertModelS(BertPreTrainedModel):
         self.init_weights()
         #self.apply(self.init_bert_weights)
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, output_all_encoded_layers=True):
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, output_hidden_states=True):
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)
         if token_type_ids is None:
@@ -1221,14 +1221,14 @@ class BertModelS(BertPreTrainedModel):
         embedding_output = self.embeddings(input_ids, token_type_ids)
         encoded_layers = self.encoder(embedding_output,
                                       extended_attention_mask,
-                                      output_all_encoded_layers=output_all_encoded_layers)
+                                      output_hidden_states=output_hidden_states)
         #print('*** encoded_layers is',encoded_layers.shape)
         sequence_output = encoded_layers[-1]
 
         #print('*** sequence_output is',sequence_output.shape)
 
         pooled_output = self.pooler(sequence_output)
-        if not output_all_encoded_layers:
+        if not output_hidden_states:
             encoded_layers = encoded_layers[-1]
         return extended_attention_mask,cextended_attention_mask,qextended_attention_mask,sequence_output#encoded_layers, pooled_output
 
@@ -2176,7 +2176,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
+        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output = self.bert(input_ids, token_type_ids, attention_mask, output_hidden_states=False)
 
         cdeencoded_layers,qdeencoded_layers = self.decoder(sequence_output, #2d --> 1d translated
                                       c_attention_mask,q_attention_mask,
@@ -2205,8 +2205,8 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         self.endLSTM.flatten_parameters()
 
         #Start and End Self Attention for span prediction
-        encoded_skip_start=self.skip_encoder_start(sequence_output1d,extended_attention_mask,output_all_encoded_layers=False)
-        encoded_skip_end=self.skip_encoder_end(sequence_output1d,extended_attention_mask,output_all_encoded_layers=False)
+        encoded_skip_start=self.skip_encoder_start(sequence_output1d,extended_attention_mask,output_hidden_states=False)
+        encoded_skip_end=self.skip_encoder_end(sequence_output1d,extended_attention_mask,output_hidden_states=False)
         for_end = torch.cat((encoded_skip_end[-1],encoded_skip_start[-1]),-1)
 
         seq_end,_  = self.endLSTM(for_end)
