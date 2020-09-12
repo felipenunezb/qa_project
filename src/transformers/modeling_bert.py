@@ -674,7 +674,7 @@ class BertLayerS(nn.Module):
         self.output = BertOutput(config)
 
     def forward(self, hidden_states, attention_mask):
-        attention_output = self.attention(hidden_states, attention_mask)
+        attention_output = self.attention(hidden_states, attention_mask)[0]
         #print('attention_output is',attention_output.shape)
         intermediate_output = self.intermediate(attention_output)
         #print('intermediate_output is',intermediate_output.shape)
