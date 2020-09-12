@@ -2080,8 +2080,8 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
 
         orig_ans_log = self.orig_ans_choice(sequence_mean)
 
-        print(f"orig_answers: {orig_answers.shape}")
-        print(f"orig_ans_log: {orig_ans_log.shape}")
+        #print(f"orig_answers: {orig_answers.shape}")
+        #print(f"orig_ans_log: {orig_ans_log.shape}")
 
         total_loss = None
         if start_positions is not None and end_positions is not None:
@@ -2216,7 +2216,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         #Skip connection from Bert Layer
         sequence_output1d = self.LayerNorm(sequence_output1d + sequence_output)
 
-        print(f"sequence_output1d: {sequence_output1d.shape}")
+        #print(f"sequence_output1d: {sequence_output1d.shape}")
 
         #Flatten LSTM parameters for memory optimization
         self.endLSTM.flatten_parameters()
@@ -2230,8 +2230,8 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         start_logits = self.qa_outputs_start(encoded_skip_start[-1])
         end_logits = self.qa_outputs_end(seq_end)
 
-        print(f"encoded_skip_start: {encoded_skip_start[-1].shape}")
-        print(f"seq_end: {seq_end.shape}")
+        #print(f"encoded_skip_start: {encoded_skip_start[-1].shape}")
+        #print(f"seq_end: {seq_end.shape}")
 
         #Logits!
         start_logits = start_logits.squeeze(-1)
@@ -2263,7 +2263,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         sequence_mean = torch.cat((voter_1, voter_2, voter_3), dim=1)
 
         orig_ans_log = self.orig_ans_choice(sequence_mean)
-        print(f"orig_ans_log: {orig_ans_log.shape}")
+        #print(f"orig_ans_log: {orig_ans_log.shape}")
 
         total_loss = None
         if start_positions is not None and end_positions is not None:
