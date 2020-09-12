@@ -2255,7 +2255,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         '''
 
         orig_ans_log = self.orig_ans_choice(sequence_output1d)
-        print("orig_ans_log: {orig_ans_log.shape}")
+        print(f"orig_ans_log: {orig_ans_log.shape}")
 
         total_loss = None
         if start_positions is not None and end_positions is not None:
