@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 import torch
 from tqdm.auto import tqdm, trange
+import json
 
 from transformers import AutoConfig, AutoModelForQuestionAnsweringVQAPool_MultiVote as AutoModelForQuestionAnswering, AutoTokenizer, HfArgumentParser, SquadDataset
 from transformers import SquadDataTrainingArguments as DataTrainingArguments
@@ -142,14 +143,13 @@ def main():
         else None
     )
 
-    #If given, load the scene file
-    processor = SquadProcessor()
-
-    ans_to_ix, ix_to_ans = processor.create_dicts(data_args.data_dir)
-    #aaaa
-    scene_dataset = (processor.load_scene_graph(data_args.data_dir, data_args.scene_file)
-        if data_args.scene_file
-        else None)
+    #Load Scene graph, if provided
+    if data_args.scene_file:
+        scene_file_path = os.path.join(data_args.data_dir, data_args.scene_file)
+        with open(scene_file_path, "r", encoding="utf-8") as reader:
+            scene_dataset = json.load(reader)
+    else:
+        scene_dataset = None
 
     # Initialize our Trainer
     trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset, eval_dataset=eval_dataset, scene_dataset=scene_dataset,)
