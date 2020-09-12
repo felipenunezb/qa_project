@@ -1216,20 +1216,31 @@ class BertModelS(BertPreTrainedModel):
         qextended_attention_mask = qextended_attention_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility
         qextended_attention_mask = (1.0 - qextended_attention_mask) * -10000.0
 
+        head_mask = self.get_head_mask(head_mask, self.config.num_hidden_layers)
 
         #raise SystemExit
         embedding_output = self.embeddings(input_ids, token_type_ids)
         encoded_layers = self.encoder(embedding_output,
                                       extended_attention_mask,
                                       output_hidden_states=output_hidden_states)
+
+        encoder_outputs = self.encoder(
+            embedding_output,
+            attention_mask=extended_attention_mask,
+            head_mask=head_mask,
+            encoder_hidden_states=encoder_hidden_states,
+            encoder_attention_mask=encoder_extended_attention_mask,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
+
         #print('*** encoded_layers is',encoded_layers.shape)
-        sequence_output = encoded_layers[-1]
+        sequence_output = encoder_outputs[0]
 
-        #print('*** sequence_output is',sequence_output.shape)
-
-        pooled_output = self.pooler(sequence_output)
+        #pooled_output = self.pooler(sequence_output)
         if not output_hidden_states:
-            encoded_layers = encoded_layers[-1]
+            encoded_layers = sequence_output
         return extended_attention_mask,cextended_attention_mask,qextended_attention_mask,sequence_output#encoded_layers, pooled_output
 
 
@@ -2176,7 +2187,19 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output = self.bert(input_ids, token_type_ids, attention_mask, output_hidden_states=False)
+        #extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output = self.bert(input_ids, token_type_ids, attention_mask, output_hidden_states=False)
+
+        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output = self.bert(
+                                                                                    input_ids,
+                                                                                    attention_mask=attention_mask,
+                                                                                    token_type_ids=token_type_ids,
+                                                                                    position_ids=position_ids,
+                                                                                    head_mask=head_mask,
+                                                                                    inputs_embeds=inputs_embeds,
+                                                                                    output_attentions=output_attentions,
+                                                                                    output_hidden_states=False, #output_hidden_states,
+                                                                                    return_dict=return_dict,
+                                                                                )
 
         cdeencoded_layers,qdeencoded_layers = self.decoder(sequence_output, #2d --> 1d translated
                                       c_attention_mask,q_attention_mask,
