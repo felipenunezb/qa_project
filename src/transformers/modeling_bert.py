@@ -1667,7 +1667,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         sequence_output = outputs[0]
 
         if scene_dataset:
-            print(f"scene dataset: {sceneData['1']['objects']['1058498']}")
+            print(f"scene dataset: {scene_dataset['1']['objects']['1058498']}")
 
         logits = self.qa_outputs(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
