@@ -688,14 +688,14 @@ class BertSkipEncoder(nn.Module):
         layer = BertLayerS(config)
         self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(1)])
 
-    def forward(self, hidden_states, attention_mask, output_all_encoded_layers=True):
+    def forward(self, hidden_states, attention_mask, output_hidden_states=True):
         all_encoder_layers = []
         for layer_module in self.layer:
             hidden_states = layer_module(hidden_states, attention_mask)
             #print('size of hidden_states in BertEncoder is',hidden_states.shape)
-            if output_all_encoded_layers:
+            if output_hidden_states:
                 all_encoder_layers.append(hidden_states)
-        if not output_all_encoded_layers:
+        if not output_hidden_states:
             all_encoder_layers.append(hidden_states)
         return all_encoder_layers
 
