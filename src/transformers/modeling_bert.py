@@ -2289,7 +2289,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
             total_loss = (start_loss + end_loss + choice_loss) / 3
 
         if not return_dict:
-            output = (start_logits, end_logits, choice_loss) #+ outputs[2:]
+            output = (start_logits, end_logits, orig_ans_log) #+ outputs[2:]
             return ((total_loss,) + output) if total_loss is not None else output
 
         return QuestionAnsweringModelOutput(
