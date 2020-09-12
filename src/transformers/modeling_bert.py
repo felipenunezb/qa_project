@@ -1233,10 +1233,10 @@ class BertModelS(BertPreTrainedModel):
 
         #raise SystemExit
         embedding_output = self.embeddings(input_ids, token_type_ids)
-        encoded_layers = self.encoder(embedding_output,
-                                      extended_attention_mask,
-                                      output_hidden_states=output_hidden_states)
-
+        #encoded_layers = self.encoder(embedding_output,
+        #                              extended_attention_mask,
+        #                              output_hidden_states=output_hidden_states)
+        encoder_extended_attention_mask = None
         encoder_outputs = self.encoder(
             embedding_output,
             attention_mask=extended_attention_mask,
