@@ -805,13 +805,13 @@ def compute_predictions_logits_vqa(
             score_diff = score_null - best_non_null_entry.start_logit - (best_non_null_entry.end_logit)
             scores_diff_json[example.qas_id] = score_diff
             if score_diff > null_score_diff_threshold:
-                #all_predictions[example.qas_id] = ""
-                all_predictions[example.qas_id] = best_choice_entry.text
+                all_predictions[example.qas_id] = ""
+                #all_predictions[example.qas_id] = best_choice_entry.text
             else:
-                if nbest_json[0]["text"] != "" and nbest_json[0]["probability"] > nbest_choice_json[0]["probability"]:
-                    all_predictions[example.qas_id] = best_non_null_entry.text
-                else:
-                    all_predictions[example.qas_id] = best_choice_entry.text
+                #if nbest_json[0]["text"] != "" and nbest_json[0]["probability"] > nbest_choice_json[0]["probability"]:
+                all_predictions[example.qas_id] = best_non_null_entry.text
+                #else:
+                #    all_predictions[example.qas_id] = best_choice_entry.text
         all_nbest_json[example.qas_id] = nbest_json
 
     if output_prediction_file:
