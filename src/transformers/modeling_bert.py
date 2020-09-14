@@ -2138,7 +2138,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         self.bert = BertModel(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
-        self.scene_emb = LoadSceneGraph_dict()
+        self.scene_emb = LoadSceneGraph_dict(config)
         self.init_weights()
 
     @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
