@@ -2071,8 +2071,9 @@ class LoadSceneGraph_dict(nn.Module):
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
     def forward(self, titles, scene_dataset, embedding, sceneDict):
+        device = titles.device
         titles_len = len(titles)
-        imageBatch = torch.zeros((titles_len, 150, 900))
+        imageBatch = torch.zeros((titles_len, 150, 900), device=device)
         for i, title in enumerate(titles):
             sceneObjs = [obj["name"] for obj in scene_dataset[str(title.item())]["objects"].values()]
             sceneAttrs = [obj["attributes"] for obj in scene_dataset[str(title.item())]["objects"].values()]
@@ -2094,24 +2095,24 @@ class LoadSceneGraph_dict(nn.Module):
                     rels.append(sceneDict.encodeSeq(rel))
                 encodedRels.append(rels)
 
-            objectEmbeddings = torch.zeros((150, 300))
+            objectEmbeddings = torch.zeros((150, 300), device=device)
             for j, obj in enumerate(encodedObjName):
-                objectEmbeddings[j, :] = torch.tensor(embedding[obj])
+                objectEmbeddings[j, :] = torch.tensor(embedding[obj], device=device)
 
-            attrEmbeddings = torch.zeros((150, 300))
+            attrEmbeddings = torch.zeros((150, 300), device=device)
             for j, attrs in enumerate(encodedAttrs):
                 if len(attrs) != 0:
-                    wordEmbs = torch.zeros((len(attrs), 300))
+                    wordEmbs = torch.zeros((len(attrs), 300), device=device)
                     for i_a, attr in enumerate(attrs):
-                        wordEmbs[i_a] = torch.tensor(embedding[attr])
+                        wordEmbs[i_a] = torch.tensor(embedding[attr], device=device)
                     attrEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
 
-            relsEmbeddings = torch.zeros((150, 300))
+            relsEmbeddings = torch.zeros((150, 300), device=device)
             for j, rels in enumerate(encodedRels):
                 if len(rels) != 0:
-                    wordEmbs = torch.zeros((len(rels), 300))
+                    wordEmbs = torch.zeros((len(rels), 300), device=device)
                     for i_r, rel in enumerate(rels):
-                        wordEmbs[i_r] = torch.tensor((embedding[rel[0]] + embedding[rel[1]]) / 2)
+                        wordEmbs[i_r] = torch.tensor((embedding[rel[0]] + embedding[rel[1]]) / 2, device=device)
                     relsEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
 
             imageBatch[i] = torch.cat((objectEmbeddings, attrEmbeddings, relsEmbeddings), dim=-1)
