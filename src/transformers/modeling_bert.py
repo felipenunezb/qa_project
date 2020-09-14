@@ -2055,34 +2055,32 @@ class LoadSceneGraph(nn.Module):
         hidden_states = self.dropout(hidden_states)
         return hidden_states
 
+def initEmbRandom(num, dim):
+    # uniform initialization
+    
+    lowInit = -1.0
+    highInit = 1.0
+    embeddings = np.random.uniform(low=lowInit, high=highInit,
+                                    size=(num, dim))
+    return embeddings
+
 class LoadSceneGraph_dict(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(900, config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.sceneDict = SymbolDict()
 
-    def generate_dict(self, scene_dataset):
-        for scene in tqdm(scene_dataset.values(), desc="Processing Scene Graphs"):
-            for obj in scene["objects"].values():
-                self.sceneDict.addSymbols(obj["name"])
-                self.sceneDict.addSymbols(obj["attributes"])
-                for rel in obj["relations"]:
-                   self.sceneDict.addSymbols(rel["name"])
-        
-        return self.sceneDict
-
-    def forward(self, titles, scene_dataset):
+    def forward(self, titles, scene_dataset, embedding, sceneDict):
         titles_len = len(titles)
         imageBatch = torch.zeros((titles_len, 150, 300))
         for i, title in enumerate(titles):
-            sceneObjs = [obj["name"] for obj in scene_dataset[img_id]["objects"].values()]
-            sceneAttrs = [obj["attributes"] for obj in scene_dataset[img_id]["objects"].values()]
+            sceneObjs = [obj["name"] for obj in scene_dataset[title]["objects"].values()]
+            sceneAttrs = [obj["attributes"] for obj in scene_dataset[title]["objects"].values()]
             sceneRels = []
-            for obj in scene_dataset[img_id]["objects"].values():
+            for obj in scene_dataset[title]["objects"].values():
                 relations = []
                 for rel in obj["relations"]:
-                    relations.append((rel["name"], scene_dataset[img_id]["objects"][rel["object"]]["name"]))
+                    relations.append((rel["name"], scene_dataset[title]["objects"][rel["object"]]["name"]))
                 sceneRels.append(relations)
 
             encodedObjName = sceneDict.encodeSeq(sceneObjs)
@@ -2163,6 +2161,8 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         output_hidden_states=None,
         return_dict=None,
         scene_dataset=None,
+        scene_dict=None,
+        embedding=None,
     ):
         r"""
         start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
@@ -2195,7 +2195,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
 
         sequence_output = outputs[0]
 
-        scenedata = self.scene_emb.generate_dict(scene_dataset)
+        scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
 
         logits = self.qa_outputs(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)

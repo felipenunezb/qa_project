@@ -29,7 +29,7 @@ from transformers import AutoConfig, AutoModelForQuestionAnsweringVQAPool_MultiV
 from transformers import SquadDataTrainingArguments as DataTrainingArguments
 from transformers import Trainer, TrainingArguments
 from transformers import squad_convert_examples_to_features
-from transformers.data.processors.squad import SquadResult, SquadV1Processor, SquadV2Processor, SquadProcessor
+from transformers.data.processors.squad import SquadResult, SquadV1Processor, SquadV2Processor, SquadProcessor, SymbolDict, initEmbRandom
 
 
 logger = logging.getLogger(__name__)
@@ -148,11 +148,22 @@ def main():
         scene_file_path = os.path.join(data_args.data_dir, data_args.scene_file)
         with open(scene_file_path, "r", encoding="utf-8") as reader:
             scene_dataset = json.load(reader)
+
+        sceneDict = SymbolDict()
+        for scene in tqdm(scene_dataset.values(), desc="Creating Scene Dictionary"):
+            for obj in scene["objects"].values():
+                sceneDict.addSymbols(obj["name"])
+                sceneDict.addSymbols(obj["attributes"])
+                for rel in obj["relations"]:
+                   sceneDict.addSymbols(rel["name"])
+
+        embedding = initEmbRandom(sceneDict.getNumSymbols(), 300)
     else:
         scene_dataset = None
+        sceneDict = None
 
     # Initialize our Trainer
-    trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset, eval_dataset=eval_dataset, scene_dataset=scene_dataset,)
+    trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset, eval_dataset=eval_dataset, scene_dataset=scene_dataset, scene_dict = sceneDict, embedding = embedding)
 
     # Training
     if training_args.do_train:

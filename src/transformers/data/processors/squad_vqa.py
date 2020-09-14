@@ -991,3 +991,12 @@ class SymbolDict(object):
             return delim.join(decoded)
 
         return decoded
+
+def initEmbRandom(num, dim):
+    # uniform initialization
+    
+    lowInit = -1.0
+    highInit = 1.0
+    embeddings = np.random.uniform(low=lowInit, high=highInit,
+                                    size=(num, dim))
+    return embeddings
