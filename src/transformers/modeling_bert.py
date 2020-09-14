@@ -28,6 +28,7 @@ import warnings
 from dataclasses import dataclass
 from typing import Optional, Tuple
 import numpy as np
+import flair
 flair_embedding = TransformerWordEmbeddings('bert-base-uncased', layers='-2')
 
 
