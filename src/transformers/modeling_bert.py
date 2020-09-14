@@ -2028,6 +2028,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         end_positions=None,
         is_impossibles=None,
         orig_answers=None,
+        titles=None,
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
@@ -2045,6 +2046,8 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
+        print(titles)
+
         outputs = self.bert(
             input_ids,
             attention_mask=attention_mask,
@@ -2059,8 +2062,8 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
 
         sequence_output = outputs[0]
 
-        if scene_dataset:
-            print(f"scene dataset: {scene_dataset['1']['objects']['1058498']}")
+        #if scene_dataset:
+        #    print(f"scene dataset: {scene_dataset['1']['objects']['1058498']}")
 
         logits = self.qa_outputs(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
@@ -2162,6 +2165,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         end_positions=None,
         is_impossibles=None,
         orig_answers=None,
+        titles=None,
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
