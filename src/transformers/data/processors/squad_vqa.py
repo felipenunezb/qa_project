@@ -240,6 +240,7 @@ def squad_convert_example_to_features(
 
         span_is_impossible = example.is_impossible
         orig_ans = example.orig_ans
+        title = example.title
         start_position = 0
         end_position = 0
         if is_training and not span_is_impossible:
@@ -282,6 +283,7 @@ def squad_convert_example_to_features(
                 end_position=end_position,
                 is_impossible=span_is_impossible,
                 orig_ans=orig_ans,
+                title=title,
                 qas_id=example.qas_id,
             )
         )
@@ -389,11 +391,18 @@ def squad_convert_examples_to_features(
         all_p_mask = torch.tensor([f.p_mask for f in features], dtype=torch.float)
         all_is_impossible = torch.tensor([f.is_impossible for f in features], dtype=torch.long)
         all_orig_answers = torch.tensor([f.orig_ans for f in features], dtype=torch.long)
+        all_title = torch.tensor([f.title for f in features], dtype=torch.long)
 
         if not is_training:
             all_feature_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
             dataset = TensorDataset(
-                all_input_ids, all_attention_masks, all_token_type_ids, all_feature_index, all_cls_index, all_p_mask
+                all_input_ids, 
+                all_attention_masks, 
+                all_token_type_ids, 
+                all_feature_index, 
+                all_cls_index, 
+                all_p_mask, 
+                all_title
             )
         else:
             all_start_positions = torch.tensor([f.start_position for f in features], dtype=torch.long)
@@ -408,6 +417,7 @@ def squad_convert_examples_to_features(
                 all_p_mask,
                 all_is_impossible,
                 all_orig_answers,
+                all_title,
             )
 
         return features, dataset
@@ -810,6 +820,7 @@ class SquadFeatures:
         end_position,
         is_impossible,
         orig_ans,
+        title,
         qas_id: str = None,
     ):
         self.input_ids = input_ids
@@ -829,6 +840,7 @@ class SquadFeatures:
         self.end_position = end_position
         self.is_impossible = is_impossible
         self.orig_ans = orig_ans
+        self.title = title
         self.qas_id = qas_id
 
 
