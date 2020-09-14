@@ -173,11 +173,13 @@ class SquadDataset(Dataset):
         p_mask = torch.tensor(feature.p_mask, dtype=torch.float)
         is_impossible = torch.tensor(feature.is_impossible, dtype=torch.float)
         #orig_ans = torch.tensor(feature.orig_ans, dtype=torch.float)
+        titles = torch.tensor(feature.title, dtype=torch.float)
 
         inputs = {
             "input_ids": input_ids,
             "attention_mask": attention_mask,
             "token_type_ids": token_type_ids,
+            "titles": titles
         }
 
         if self.args.model_type in ["xlm", "roberta", "distilbert", "camembert"]:
