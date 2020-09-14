@@ -2094,27 +2094,27 @@ class LoadSceneGraph_dict(nn.Module):
                     rels.append(sceneDict.encodeSeq(rel))
                 encodedRels.append(rels)
 
-            objectEmbeddings = np.zeros((150, 300))
+            objectEmbeddings = torch.zeros((150, 300))
             for j, obj in enumerate(encodedObjName):
                 objectEmbeddings[j, :] = embedding[obj]
 
-            attrEmbeddings = np.zeros((150, 300))
+            attrEmbeddings = torch.zeros((150, 300))
             for j, attrs in enumerate(encodedAttrs):
                 if len(attrs) != 0:
-                    wordEmbs = np.zeros((len(attrs), 300))
+                    wordEmbs = torch.zeros((len(attrs), 300))
                     for i_a, attr in enumerate(attrs):
                         wordEmbs[i_a] = embedding[attr]
-                    attrEmbeddings[j, :] = np.mean(wordEmbs, axis=0)
+                    attrEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
 
-            relsEmbeddings = np.zeros((150, 300))
+            relsEmbeddings = torch.zeros((150, 300))
             for j, rels in enumerate(encodedRels):
                 if len(rels) != 0:
-                    wordEmbs = np.zeros((len(rels), 300))
+                    wordEmbs = torch.zeros((len(rels), 300))
                     for i_r, rel in enumerate(rels):
                         wordEmbs[i_r] = (embedding[rel[0]] + embedding[rel[1]]) / 2
-                    relsEmbeddings[j, :] = np.mean(wordEmbs, axis=0)
+                    relsEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
 
-            imageBatch[i] = np.concatenate((objectEmbeddings, attrEmbeddings, relsEmbeddings), axis=-1)
+            imageBatch[i] = torch.cat((objectEmbeddings, attrEmbeddings, relsEmbeddings), dim=-1)
 
         hidden_states = self.dense(imageBatch)
         hidden_states = self.dropout(hidden_states)
