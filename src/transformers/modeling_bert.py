@@ -2204,17 +2204,14 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         end_logits = end_logits.squeeze(-1)
 
         #mean of second to last layer of hidden states
-        voter_1 = torch.mean(outputs[2][-2], dim=1) 
+        voter_1 = torch.mean(torch.cat(outputs[2][-2],scenedata,dim=1), dim=1)
         #mean of last layer of hidden states
-        voter_2 = torch.mean(outputs[2][-1], dim=1)
-        #mean of scene
-        voter_5 = torch.mean(scenedata, dim=1)
+        voter_2 = torch.mean(torch.cat(outputs[2][-1],scenedata,dim=1), dim=1)
         #mean of both voters
-        voter_3 = torch.mean(torch.stack([voter_1, voter_2, voter_5]), dim=0)
+        voter_3 = torch.mean(torch.stack([voter_1, voter_2]), dim=0)
         #max of both voters
-        voter_4 = torch.max(voter_1, voter_2, voter_5)
+        voter_4 = torch.max(voter_1, voter_2)
         
-
         sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4), dim=1)
 
         orig_ans_log = self.orig_ans_choice(sequence_mean)
