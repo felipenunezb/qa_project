@@ -28,8 +28,8 @@ import warnings
 from dataclasses import dataclass
 from typing import Optional, Tuple
 import numpy as np
-from bert_embedding import BertEmbedding
 
+from .data import SymbolDict
 
 import torch
 import torch.utils.checkpoint
