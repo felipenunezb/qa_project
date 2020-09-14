@@ -27,6 +27,11 @@ import shutil
 import warnings
 from dataclasses import dataclass
 from typing import Optional, Tuple
+import numpy as np
+from flair.embeddings import TransformerWordEmbeddings
+from flair.data import Sentence
+flair_embedding = TransformerWordEmbeddings('bert-base-uncased', layers='-2')
+
 
 import torch
 import torch.utils.checkpoint
@@ -1992,6 +1997,65 @@ class BertForQuestionAnswering(BertPreTrainedModel):
             attentions=outputs.attentions,
         )
 
+class LoadSceneGraph(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.embedding = flair_embedding
+        self.dense = nn.Linear(3*config.hidden_size, config.hidden_size)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+
+    def forward(self, titles, scene_dataset):
+        titles_len = len(titles)
+        imageBatch = torch.zeros((titles_len, 150, 2304))
+        for i, title in enumerate(titles):
+            sceneObjs = [obj["name"] for obj in scene_dataset[str(title.item())]["objects"].values()]
+            sceneAttrs = [obj["attributes"] for obj in scene_dataset[str(title.item())]["objects"].values()]
+            sceneRels = []
+            for obj in scene_dataset[str(title.item())]["objects"].values():
+                relations = []
+                for rel in obj["relations"]:
+                    relations.append((rel["name"], scene_dataset[str(title.item())]["objects"][rel["object"]]["name"]))
+                sceneRels.append(relations)
+
+            objectEmbeddings = torch.zeros((150, 768))
+            for j, obj in enumerate(sceneObjs):
+                obj_emb_tmp = Sentence(obj)
+                self.embedding.embed(obj_emb_tmp)
+                mean_tmp = torch.mean(torch.stack([token.get_embedding() for token in obj_emb_tmp]), dim=0)
+                objectEmbeddings[j, :] = mean_tmp             
+
+            attrEmbeddings = torch.zeros((150, 768))
+            for j, attrs in enumerate(sceneAttrs):
+                if len(attrs) != 0:
+                    wordEmbs = torch.zeros((len(attrs), 768))
+                    for i_a, attr in enumerate(attrs):
+                        attr_emb_tmp = Sentence(attr)
+                        self.embedding.embed(attr_emb_tmp)
+                        wordEmbs[i_a] = torch.mean(torch.stack([token.get_embedding() for token in attr_emb_tmp]), dim=0)
+                    
+                    attrEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
+                    
+            relsEmbeddings = torch.zeros((150, 768))
+            for j, rels in enumerate(sceneRels):
+                if len(rels) != 0:
+                    wordEmbs = torch.zeros((len(rels), 768))
+                    for i_r, rel in enumerate(rels):
+                        rel0 = Sentence(rel[0])
+                        rel1 = Sentence(rel[1])
+                        self.embedding.embed(rel0)
+                        self.embedding.embed(rel1)
+                        rel0_mean = torch.mean(torch.stack([token.get_embedding() for token in rel0]), dim=0)
+                        rel1_mean = torch.mean(torch.stack([token.get_embedding() for token in rel1]), dim=0)
+                        wordEmbs[i_r] = torch.mean(torch.stack((rel0_mean, rel1_mean)), dim=0)
+                    relsEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
+                                
+            print(torch.cat((objectEmbeddings, attrEmbeddings, relsEmbeddings), dim=-1).shape)
+            imageBatch[i] = torch.cat((objectEmbeddings, attrEmbeddings, relsEmbeddings), dim=-1)
+
+        hidden_states = self.dense(imageBatch)
+        hidden_states = self.dropout(hidden_states)
+        return hidden_states
+
 
 @add_start_docstrings(
     """Bert Model with a span classification head on top for extractive question-answering tasks like SQuAD (a linear
@@ -2006,7 +2070,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         self.bert = BertModel(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
-
+        self.scene_emb = LoadSceneGraph()
         self.init_weights()
 
     @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
@@ -2046,9 +2110,10 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        for title in titles:
-            sceneObjs = [obj["name"] for obj in scene_dataset[str(title.item())]["objects"].values()]
-            print(sceneObjs)
+        #for title in titles:
+        #    sceneObjs = [obj["name"] for obj in scene_dataset[str(title.item())]["objects"].values()]
+        #   print(sceneObjs)
+        
 
         outputs = self.bert(
             input_ids,
@@ -2064,8 +2129,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
 
         sequence_output = outputs[0]
 
-        #if scene_dataset:
-        #    print(f"scene dataset: {scene_dataset['1']['objects']['1058498']}")
+        scenedata = self.scene_emb(titles)
 
         logits = self.qa_outputs(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
