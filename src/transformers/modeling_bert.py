@@ -2046,7 +2046,9 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        print(titles)
+        for title in titles:
+            sceneObjs = [obj["name"] for obj in scene_dataset[str(title)]["objects"].values()]
+            print(sceneObjs)
 
         outputs = self.bert(
             input_ids,
