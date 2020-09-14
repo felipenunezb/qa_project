@@ -2072,7 +2072,7 @@ class LoadSceneGraph_dict(nn.Module):
 
     def forward(self, titles, scene_dataset, embedding, sceneDict):
         titles_len = len(titles)
-        imageBatch = torch.zeros((titles_len, 150, 300))
+        imageBatch = torch.zeros((titles_len, 150, 900))
         for i, title in enumerate(titles):
             sceneObjs = [obj["name"] for obj in scene_dataset[str(title.item())]["objects"].values()]
             sceneAttrs = [obj["attributes"] for obj in scene_dataset[str(title.item())]["objects"].values()]
