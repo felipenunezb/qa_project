@@ -2197,6 +2197,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         sequence_output = outputs[0]
 
         scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
+        print(scenedata.shape)
 
         logits = self.qa_outputs(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
@@ -2211,6 +2212,8 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         voter_3 = torch.mean(torch.stack([voter_1, voter_2]), dim=0)
         #max of both voters
         voter_4 = torch.max(voter_1, voter_2)
+
+        print(voter_4.shape)
 
         sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4), dim=1)
 
