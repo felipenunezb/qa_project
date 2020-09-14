@@ -173,6 +173,8 @@ class Trainer:
         tb_writer: Optional["SummaryWriter"] = None,
         optimizers: Tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LambdaLR] = (None, None),
         scene_dataset: Optional[Dataset] = None,
+        scene_dict: Optional[Dataset] = None,
+        embedding: Optional[Dataset] = None,
     ):
         self.model = model.to(args.device)
         self.args = args
@@ -184,6 +186,8 @@ class Trainer:
         self.optimizer, self.lr_scheduler = optimizers
         self.tb_writer = tb_writer
         self.scene_data = scene_dataset
+        self.scene_dict = scene_dict
+        self.embedding = embedding
         if tb_writer is None and is_tensorboard_available() and self.is_world_process_zero():
             self.tb_writer = SummaryWriter(log_dir=self.args.logging_dir)
         if not is_tensorboard_available():
@@ -742,7 +746,7 @@ class Trainer:
         model.train()
         inputs = self._prepare_inputs(inputs, model)
         #print(inputs)
-        dict_upd = {'scene_dataset' : self.scene_data}
+        dict_upd = {'scene_dataset':self.scene_data, 'scene_dict':self.scene_dict, 'embedding':self.embedding}
         #add scene data
         inputs.update(dict_upd)
 
