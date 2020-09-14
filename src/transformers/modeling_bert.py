@@ -28,7 +28,6 @@ import warnings
 from dataclasses import dataclass
 from typing import Optional, Tuple
 import numpy as np
-from flair.embeddings import WordEmbeddings, FlairEmbeddings, StackedEmbeddings
 
 
 import torch
@@ -2068,7 +2067,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         self.bert = BertModel(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
-        self.scene_emb = LoadSceneGraph()
+        #self.scene_emb = LoadSceneGraph()
         self.init_weights()
 
     @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
@@ -2127,7 +2126,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
 
         sequence_output = outputs[0]
 
-        scenedata = self.scene_emb(titles)
+        #scenedata = self.scene_emb(titles)
 
         logits = self.qa_outputs(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
