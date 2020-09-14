@@ -30,7 +30,7 @@ from typing import Optional, Tuple
 import numpy as np
 from flair.embeddings import TransformerWordEmbeddings
 from flair.data import Sentence
-#flair_embedding = TransformerWordEmbeddings('bert-base-uncased', layers='-2')
+flair_embedding = TransformerWordEmbeddings('bert-base-uncased', layers='-2')
 
 
 import torch
