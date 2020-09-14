@@ -29,7 +29,8 @@ from transformers import AutoConfig, AutoModelForQuestionAnsweringVQAPool_MultiV
 from transformers import SquadDataTrainingArguments as DataTrainingArguments
 from transformers import Trainer, TrainingArguments
 from transformers import squad_convert_examples_to_features
-from transformers.data.processors.squad import SquadResult, SquadV1Processor, SquadV2Processor, SquadProcessor, SymbolDict, initEmbRandom
+from transformers.data.processors.squad import SquadResult, SquadV1Processor, SquadV2Processor, SquadProcessor
+from transformers import SymbolDict, initEmbRandom
 
 logger = logging.getLogger(__name__)
 
