@@ -2096,14 +2096,14 @@ class LoadSceneGraph_dict(nn.Module):
 
             objectEmbeddings = torch.zeros((150, 300))
             for j, obj in enumerate(encodedObjName):
-                objectEmbeddings[j, :] = embedding[obj]
+                objectEmbeddings[j, :] = torch.tensor(embedding[obj])
 
             attrEmbeddings = torch.zeros((150, 300))
             for j, attrs in enumerate(encodedAttrs):
                 if len(attrs) != 0:
                     wordEmbs = torch.zeros((len(attrs), 300))
                     for i_a, attr in enumerate(attrs):
-                        wordEmbs[i_a] = embedding[attr]
+                        wordEmbs[i_a] = torch.tensor(embedding[attr])
                     attrEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
 
             relsEmbeddings = torch.zeros((150, 300))
@@ -2111,7 +2111,7 @@ class LoadSceneGraph_dict(nn.Module):
                 if len(rels) != 0:
                     wordEmbs = torch.zeros((len(rels), 300))
                     for i_r, rel in enumerate(rels):
-                        wordEmbs[i_r] = (embedding[rel[0]] + embedding[rel[1]]) / 2
+                        wordEmbs[i_r] = torch.tensor((embedding[rel[0]] + embedding[rel[1]]) / 2)
                     relsEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
 
             imageBatch[i] = torch.cat((objectEmbeddings, attrEmbeddings, relsEmbeddings), dim=-1)
