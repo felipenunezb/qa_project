@@ -28,6 +28,7 @@ import warnings
 from dataclasses import dataclass
 from typing import Optional, Tuple
 import numpy as np
+from tqdm import tqdm
 
 from .data import SymbolDict
 
@@ -2054,6 +2055,75 @@ class LoadSceneGraph(nn.Module):
         hidden_states = self.dropout(hidden_states)
         return hidden_states
 
+class LoadSceneGraph_dict(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.dense = nn.Linear(900, config.hidden_size)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.sceneDict = SymbolDict()
+
+    def generate_dict(self, scene_dataset):
+        data = []
+        sceneData = []
+        for scene in tqdm(scene_dataset.values(), desc="Processing Scene Graphs"):
+            for obj in scene["objects"].values():
+                sceneDict.addSymbols(obj["name"])
+                sceneDict.addSymbols(obj["attributes"])
+                for rel in obj["relations"]:
+                    sceneDict.addSymbols(rel["name"])
+        
+        return sceneDict
+
+    def forward(self, titles, scene_dataset):
+        titles_len = len(titles)
+        imageBatch = torch.zeros((titles_len, 150, 300))
+        for i, title in enumerate(titles):
+            sceneObjs = [obj["name"] for obj in scene_dataset[img_id]["objects"].values()]
+            sceneAttrs = [obj["attributes"] for obj in scene_dataset[img_id]["objects"].values()]
+            sceneRels = []
+            for obj in scene_dataset[img_id]["objects"].values():
+                relations = []
+                for rel in obj["relations"]:
+                    relations.append((rel["name"], scene_dataset[img_id]["objects"][rel["object"]]["name"]))
+                sceneRels.append(relations)
+
+            encodedObjName = sceneDict.encodeSeq(sceneObjs)
+            encodedAttrs = []
+            for attr in sceneAttrs:
+                encodedAttrs.append(sceneDict.encodeSeq(attr))
+            encodedRels = []
+            for objRels in sceneRels:
+                rels = []
+                for rel in objRels:
+                    rels.append(sceneDict.encodeSeq(rel))
+                encodedRels.append(rels)
+
+            objectEmbeddings = np.zeros((150, 300))
+            for j, obj in enumerate(encodedObjName):
+                objectEmbeddings[j, :] = embedding[obj]
+
+            attrEmbeddings = np.zeros((150, 300))
+            for j, attrs in enumerate(encodedAttrs):
+                if len(attrs) != 0:
+                    wordEmbs = np.zeros((len(attrs), 300))
+                    for i_a, attr in enumerate(attrs):
+                        wordEmbs[i_a] = embedding[attr]
+                    attrEmbeddings[j, :] = np.mean(wordEmbs, axis=0)
+
+            relsEmbeddings = np.zeros((150, 300))
+            for j, rels in enumerate(encodedRels):
+                if len(rels) != 0:
+                    wordEmbs = np.zeros((len(rels), 300))
+                    for i_r, rel in enumerate(rels):
+                        wordEmbs[i_r] = (embedding[rel[0]] + embedding[rel[1]]) / 2
+                    relsEmbeddings[j, :] = np.mean(wordEmbs, axis=0)
+
+            imageBatch[i] = np.concatenate((objectEmbeddings, attrEmbeddings, relsEmbeddings), axis=-1)
+
+        hidden_states = self.dense(imageBatch)
+        hidden_states = self.dropout(hidden_states)
+        return hidden_states
+
 
 @add_start_docstrings(
     """Bert Model with a span classification head on top for extractive question-answering tasks like SQuAD (a linear
@@ -2068,7 +2138,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         self.bert = BertModel(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
-        #self.scene_emb = LoadSceneGraph()
+        self.scene_emb = LoadSceneGraph_dict()
         self.init_weights()
 
     @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
@@ -2127,7 +2197,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
 
         sequence_output = outputs[0]
 
-        #scenedata = self.scene_emb(titles)
+        scenedata = self.scene_emb.generate_dict(scene_dataset)
 
         logits = self.qa_outputs(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
