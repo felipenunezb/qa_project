@@ -65,6 +65,8 @@ from .data import (
     xnli_output_modes,
     xnli_processors,
     xnli_tasks_num_labels,
+    SymbolDict,
+    initEmbRandom,
 )
 
 # Files and general utilities
