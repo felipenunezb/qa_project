@@ -865,3 +865,129 @@ class SquadResult:
             self.start_top_index = start_top_index
             self.end_top_index = end_top_index
             self.cls_logits = cls_logits
+
+
+class SymbolDict(object):
+    def __init__(self, empty=False):
+        self.padding = "<PAD>"
+        self.unknown = "<UNK>"
+        self.start = "<START>"
+        self.end = "<END>"
+
+        self.invalidSymbols = [self.padding, self.unknown, self.start, self.end]
+
+        if empty:
+            self.sym2id = {self.padding: 0}
+            self.id2sym = [self.padding]
+        else:
+            self.sym2id = {self.padding: 0, self.unknown: 1, self.start: 2, self.end: 3}
+            self.id2sym = [self.padding, self.unknown, self.start, self.end]
+        self.allSeqs = []
+
+    def getNumSymbols(self):
+        return len(self.sym2id)
+
+    def isValid(self, enc):
+        return enc not in self.invalidSymbols
+
+    def resetSeqs(self):
+        self.allSeqs = []
+
+    def addSymbols(self, seq):
+        if type(seq) is not list:
+            seq = [seq]
+        self.allSeqs += seq
+
+    # Call to create the words-to-integers vocabulary after (reading word sequences with addSymbols). 
+    def addToVocab(self, symbol):
+        if symbol not in self.sym2id:
+            self.sym2id[symbol] = self.getNumSymbols()
+            self.id2sym.append(symbol)
+
+    # create vocab only if not existing..?
+    def createVocab(self, minCount=0, top=0, addUnk=False, weights=False):
+        counter = {}
+        for symbol in self.allSeqs:
+            counter[symbol] = counter.get(symbol, 0) + 1
+
+        isTop = lambda symbol: True
+        if top > 0:
+            topItems = sorted(counter.items(), key=lambda x: x[1], reverse=True)[:top]
+            tops = [k for k, v in topItems]
+            isTop = lambda symbol: symbol in tops
+
+        if addUnk:
+            self.addToVocab(self.unknown)
+
+        for symbol in counter:
+            if counter[symbol] > minCount and isTop(symbol):
+                self.addToVocab(symbol)
+
+        self.counter = counter
+
+        self.counts = np.array([counter.get(sym, 0) for sym in self.id2sym])
+
+        if weights:
+            self.weights = np.array([1.0 for sym in self.id2sym])
+            if config.ansWeighting:
+                weight = lambda w: 1.0 / float(w) if w > 0 else 0.0
+                self.weights = np.array([weight(counter.get(sym, 0)) for sym in self.id2sym])
+                totalWeight = np.sum(self.weights)
+                self.weights /= totalWeight
+                self.weights *= len(self.id2sym)
+            elif config.ansWeightingRoot:
+                weight = lambda w: 1.0 / math.sqrt(float(w)) if w > 0 else 0
+                self.weights = np.array([weight(counter.get(sym, 0)) for sym in self.id2sym])
+                totalWeight = np.sum(self.weights)
+                self.weights /= totalWeight
+                self.weights *= len(self.id2sym)
+
+    # Encodes a symbol. Returns the matching integer.
+    def encodeSym(self, symbol):
+        if symbol not in self.sym2id:
+            symbol = self.unknown
+        return self.sym2id[symbol]  # self.sym2id.get(symbol, None) # # -1 VQA MAKE SURE IT DOESNT CAUSE BUGS
+
+    '''
+    Encodes a sequence of symbols.
+    Optionally add start, or end symbols. 
+    Optionally reverse sequence 
+    '''
+
+    def encodeSeq(self, decoded, addStart=False, addEnd=False, reverse=False):
+        if reverse:
+            decoded.reverse()
+        if addStart:
+            decoded = [self.start] + decoded
+        if addEnd:
+            decoded = decoded + [self.end]
+        encoded = [self.encodeSym(symbol) for symbol in decoded]
+        return encoded
+
+    # Decodes an integer into its symbol 
+    def decodeId(self, enc):
+        return self.id2sym[enc] if enc < self.getNumSymbols() else self.unknown
+
+    '''
+    Decodes a sequence of integers into their symbols.
+    If delim is given, joins the symbols using delim,
+    Optionally reverse the resulted sequence 
+    '''
+
+    def decodeSeq(self, encoded, delim=None, reverse=False, stopAtInvalid=True):
+        length = 0
+        for i in range(len(encoded)):
+            if not self.isValid(self.decodeId(encoded[i])) and stopAtInvalid:
+                # if not self.isValid(encoded[i]) and stopAtInvalid:
+                break
+            length += 1
+        encoded = encoded[:length]
+
+        decoded = [self.decodeId(enc) for enc in encoded]
+        if reverse:
+            decoded.reverse()
+
+        if delim is not None:
+            return delim.join(decoded)
+
+        return decoded
