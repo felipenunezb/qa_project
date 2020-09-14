@@ -2063,16 +2063,14 @@ class LoadSceneGraph_dict(nn.Module):
         self.sceneDict = SymbolDict()
 
     def generate_dict(self, scene_dataset):
-        data = []
-        sceneData = []
         for scene in tqdm(scene_dataset.values(), desc="Processing Scene Graphs"):
             for obj in scene["objects"].values():
-                sceneDict.addSymbols(obj["name"])
-                sceneDict.addSymbols(obj["attributes"])
+                self.sceneDict.addSymbols(obj["name"])
+                self.sceneDict.addSymbols(obj["attributes"])
                 for rel in obj["relations"]:
-                    sceneDict.addSymbols(rel["name"])
+                   self.sceneDict.addSymbols(rel["name"])
         
-        return sceneDict
+        return self.sceneDict
 
     def forward(self, titles, scene_dataset):
         titles_len = len(titles)
