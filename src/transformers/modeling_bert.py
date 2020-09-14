@@ -2074,13 +2074,13 @@ class LoadSceneGraph_dict(nn.Module):
         titles_len = len(titles)
         imageBatch = torch.zeros((titles_len, 150, 300))
         for i, title in enumerate(titles):
-            sceneObjs = [obj["name"] for obj in scene_dataset[title]["objects"].values()]
-            sceneAttrs = [obj["attributes"] for obj in scene_dataset[title]["objects"].values()]
+            sceneObjs = [obj["name"] for obj in scene_dataset[str(title.item())]["objects"].values()]
+            sceneAttrs = [obj["attributes"] for obj in scene_dataset[str(title.item())]["objects"].values()]
             sceneRels = []
-            for obj in scene_dataset[title]["objects"].values():
+            for obj in scene_dataset[str(title.item())]["objects"].values():
                 relations = []
                 for rel in obj["relations"]:
-                    relations.append((rel["name"], scene_dataset[title]["objects"][rel["object"]]["name"]))
+                    relations.append((rel["name"], scene_dataset[str(title.item())]["objects"][rel["object"]]["name"]))
                 sceneRels.append(relations)
 
             encodedObjName = sceneDict.encodeSeq(sceneObjs)
