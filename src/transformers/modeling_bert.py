@@ -28,6 +28,7 @@ import warnings
 from dataclasses import dataclass
 from typing import Optional, Tuple
 import numpy as np
+from bert_embedding import BertEmbedding
 
 
 import torch
