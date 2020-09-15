@@ -2579,11 +2579,13 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
         self.num_choices = 2914
         self.bert = BertModelS(config)
         self.decoder = BertDirectedAttention(config)
+        self.hidden_size = config.hidden_size
         self.qa_outputs_start = nn.Linear(config.hidden_size, 1)
         self.qa_outputs_end = nn.Linear(config.hidden_size,1)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(3*config.hidden_size, self.num_choices))
 
         self.scene_emb = LoadSceneGraph_dict(config)
+        self.conv_linear = nn.Linear(config.hidden_size+150, config.hidden_size)
 
         self.conv1d_1 = nn.Conv1d(in_channels=2*config.hidden_size,out_channels=3*config.hidden_size//2,kernel_size=3,padding=1)
         self.conv1d_2 = nn.Conv1d(in_channels=3*config.hidden_size//2,out_channels=config.hidden_size,kernel_size=3,padding=1)
@@ -2674,11 +2676,12 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
         print(f"enc_cat3: {enc_cat.shape}")
         sequence_output1d_1 = self.conv1d_1(enc_cat)
         sequence_output1d = self.conv1d_2(sequence_output1d_1)
+        print(f"sequence_output1d : {sequence_output1d.shape}")
 
         sequence_output1d = sequence_output1d.permute(0,2,1).contiguous()
 
         #Skip connection from Bert Layer
-        sequence_output1d = self.LayerNorm(sequence_output1d + sequence_output)
+        sequence_output1d = self.LayerNorm(seq_output_orig_shape + sequence_output)
 
         #print(f"sequence_output1d: {sequence_output1d.shape}")
 
