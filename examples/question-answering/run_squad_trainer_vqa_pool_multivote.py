@@ -29,7 +29,7 @@ from transformers import AutoConfig, AutoModelForQuestionAnsweringVQAPool_MultiV
 from transformers import SquadDataTrainingArguments as DataTrainingArguments
 from transformers import Trainer, TrainingArguments
 from transformers import squad_convert_examples_to_features
-from transformers.data.processors.squad import SquadResult, SquadV1Processor, SquadV2Processor, SquadProcessor
+from transformers.data.processors.squad_vqa import SquadResult, SquadV1Processor, SquadV2Processor, SquadProcessor, initializeWordEmbeddings
 from transformers import SymbolDict, initEmbRandom
 
 logger = logging.getLogger(__name__)
@@ -156,11 +156,23 @@ def main():
                 sceneDict.addSymbols(obj["attributes"])
                 for rel in obj["relations"]:
                    sceneDict.addSymbols(rel["name"])
+        #create vocab           
+        sceneDict.createVocab(minCount=0)
 
-        embedding = initEmbRandom(sceneDict.getNumSymbols(), 300)
+        if data_args.cached_embedding:
+            import numpy as np
+            embedding = np.load(os.path.join(data_args.data_dir, data_args.cached_embedding))
+        elif data_args.emb_file:
+            embedding = initializeWordEmbeddings(data_args.emb_dim, 
+                                                wordsDict=sceneDict, 
+                                                random=False,
+                                                filename=os.path.join(data_args.data_dir, data_args.emb_file))
+        else:
+            embedding = initEmbRandom(sceneDict.getNumSymbols(), data_args.emb_dim)
     else:
         scene_dataset = None
         sceneDict = None
+        embedding = None
 
     # Initialize our Trainer
     trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset, eval_dataset=eval_dataset, scene_dataset=scene_dataset, scene_dict = sceneDict, embedding = embedding)

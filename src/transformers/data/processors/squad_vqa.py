@@ -1000,3 +1000,30 @@ def initEmbRandom(num, dim):
     embeddings = np.random.uniform(low=lowInit, high=highInit,
                                     size=(num, dim))
     return embeddings
+
+def initializeWordEmbeddings(dim, wordsDict=None, random=False, filename=None):
+
+    embeddings = initEmbRandom(wordsDict.getNumSymbols(), dim)
+
+    # if wrdEmbRandom = False, use GloVE
+    counter = 0
+    if not random:
+        wordVectors = {}
+        with open(filename, 'r') as inFile:  
+            for line in tqdm(inFile):
+                line = line.strip().split()
+                word = line[0].lower()
+                vector = np.array([float(x) for x in line[1:]])
+                wordVectors[word] = vector
+
+            for sym, idx in tqdm(wordsDict.sym2id.items()):
+                if " " in sym:
+                    symEmb = sentenceEmb(sym, wordVectors, 300)
+                    embeddings[idx] = symEmb
+                else:
+                    if sym in wordVectors:
+                        embeddings[idx] = wordVectors[sym]
+                        counter += 1
+
+
+    return embeddings

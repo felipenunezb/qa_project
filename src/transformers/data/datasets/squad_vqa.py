@@ -78,6 +78,18 @@ class SquadDataTrainingArguments:
     scene_file: str = field(
         default=None, metadata={"help": "The input scene graph file. Should contain the .json files for the SQuAD task."}
     )
+    cached_embedding: str = field(
+        default=None, metadata={"help": "The scene graph vocab embedding file."}
+    )
+    emb_file: str = field(
+        default=None, metadata={"help": "The input embedding file (e.g. Glove), this adds time to the total processing."}
+    )
+    emb_dim: int = field(
+        default=300,
+        metadata={
+            "help": "Embedding dimension, when raw file is provided. If cached embedding is provided, this is not needed."
+        },
+    )
 
     threads: int = field(default=1, metadata={"help": "multiple threads for converting example to features"})
 
