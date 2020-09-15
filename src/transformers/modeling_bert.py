@@ -2357,13 +2357,13 @@ class BertForQuestionAnsweringVanillaSG(BertPreTrainedModel):
             ignored_index = start_logits.size(1)
             start_positions.clamp_(0, ignored_index)
             end_positions.clamp_(0, ignored_index)
-            orig_answers.clamp_(0, ignored_index)
+            #orig_answers.clamp_(0, ignored_index)
 
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
             start_loss = loss_fct(start_logits, start_positions)
             end_loss = loss_fct(end_logits, end_positions)
-            #loss_fct_c = CrossEntropyLoss()
-            choice_loss = loss_fct(orig_ans_log, orig_answers)
+            loss_fct_c = CrossEntropyLoss()
+            choice_loss = loss_fct_c(orig_ans_log, orig_answers)
             total_loss = (start_loss + end_loss + choice_loss) / 3
 
         if not return_dict:
@@ -2724,14 +2724,14 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
             ignored_index = start_logits.size(1)
             start_positions.clamp_(0, ignored_index)
             end_positions.clamp_(0, ignored_index)
-            orig_answers.clamp_(0, ignored_index)
+            #orig_answers.clamp_(0, ignored_index)
 
             #print(f"orig_answers: {orig_answers.shape}")
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
             start_loss = loss_fct(start_logits, start_positions)
             end_loss = loss_fct(end_logits, end_positions)
-            #loss_fct_c = CrossEntropyLoss()
-            choice_loss = loss_fct(orig_ans_log, orig_answers)
+            loss_fct_c = CrossEntropyLoss()
+            choice_loss = loss_fct_c(orig_ans_log, orig_answers)
             total_loss = (start_loss + end_loss + choice_loss) / 3
 
         if not return_dict:
