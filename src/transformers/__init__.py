@@ -202,6 +202,7 @@ if is_torch_available():
         AutoModelForQuestionAnsweringVQAPool_MultiVote,
         AutoModelForQuestionAnsweringSteroids,
         AutoModelForQuestionAnsweringVQA_VanillaSG,
+        AutoModelForQuestionAnsweringSteroidsSG,
         AutoModelWithLMHead,
         AutoModelForCausalLM,
         AutoModelForMaskedLM,
@@ -223,6 +224,7 @@ if is_torch_available():
         MODEL_FOR_QUESTION_ANSWERING_VQAPool_MultiVote_MAPPING,        
         MODEL_FOR_QUESTION_ANSWERING_STEROIDS_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_VanillaSG_MAPPING,
+        MODEL_FOR_QUESTION_ANSWERING_STEROIDSSG_MAPPING,
         MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING,
         MODEL_FOR_MULTIPLE_CHOICE_MAPPING,
     )
