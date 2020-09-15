@@ -22,6 +22,7 @@ import logging
 import os
 import random
 import timeit
+import json
 
 import numpy as np
 import torch
@@ -44,7 +45,8 @@ from transformers.data.metrics.squad_metrics import (
     compute_predictions_logits_vqa as compute_predictions_logits,
     squad_evaluate,
 )
-from transformers.data.processors.squad_vqa import SquadResult, SquadV1Processor, SquadV2Processor
+from transformers.data.processors.squad_vqa import SquadResult, SquadV1Processor, SquadV2Processor, SquadProcessor, initializeWordEmbeddings
+from transformers import SymbolDict, initEmbRandom
 
 from evaluate_official2 import eval_squad
 
@@ -165,6 +167,7 @@ def train(args, train_dataset, model, tokenizer):
     train_iterator = trange(
         epochs_trained, int(args.num_train_epochs), desc="Epoch", disable=args.local_rank not in [-1, 0]
     )
+
     # Added here for reproductibility
     set_seed(args)
 
@@ -291,6 +294,38 @@ def evaluate(args, model, tokenizer, prefix=""):
     all_results = []
     start_time = timeit.default_timer()
 
+    
+    #Load Scene graph, if provided
+    if args.scene_file:
+        scene_file_path = os.path.join(args.data_dir, args.scene_file)
+        with open(scene_file_path, "r", encoding="utf-8") as reader:
+            scene_dataset = json.load(reader)
+
+        sceneDict = SymbolDict()
+        for scene in tqdm(scene_dataset.values(), desc="Creating Scene Dictionary"):
+            for obj in scene["objects"].values():
+                sceneDict.addSymbols(obj["name"])
+                sceneDict.addSymbols(obj["attributes"])
+                for rel in obj["relations"]:
+                   sceneDict.addSymbols(rel["name"])
+        #create vocab           
+        sceneDict.createVocab(minCount=0)
+
+        if args.cached_embedding:
+            import numpy as np
+            embedding = np.load(os.path.join(args.data_dir, args.cached_embedding))
+        elif args.emb_file:
+            embedding = initializeWordEmbeddings(args.emb_dim, 
+                                                wordsDict=sceneDict, 
+                                                random=False,
+                                                filename=os.path.join(args.data_dir, args.emb_file))
+        else:
+            embedding = initEmbRandom(sceneDict.getNumSymbols(), args.emb_dim)
+    else:
+        scene_dataset = None
+        sceneDict = None
+        embedding = None
+
     for batch in tqdm(eval_dataloader, desc="Evaluating"):
         model.eval()
         batch = tuple(t.to(args.device) for t in batch)
@@ -300,6 +335,9 @@ def evaluate(args, model, tokenizer, prefix=""):
                 "input_ids": batch[0],
                 "attention_mask": batch[1],
                 "token_type_ids": batch[2],
+                "scene_dataset": scene_dataset,
+                "scene_dict": sceneDict,
+                "embedding": embedding,
             }
 
             if args.model_type in ["xlm", "roberta", "distilbert", "camembert"]:
@@ -677,6 +715,14 @@ def main():
     parser.add_argument("--server_port", type=str, default="", help="Can be used for distant debugging.")
 
     parser.add_argument("--threads", type=int, default=1, help="multiple threads for converting example to features")
+
+    parser.add_argument("--scene_file", type=str, default=None, help="The input scene graph file. Should contain the .json files for the SQuAD task.")
+
+    parser.add_argument("--cached_embedding", type=str, default=None, help="The scene graph vocab embedding file.")
+
+    parser.add_argument("--emb_file", type=str, default=None, help="The input embedding file (e.g. Glove), this adds time to the total processing.")
+
+    parser.add_argument("--emb_dim", type=int, default=300, help="Embedding dimension, when raw file is provided. If cached embedding is provided, this is not needed.")
 
     args = parser.parse_args()
 
