@@ -2678,7 +2678,7 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
         sequence_output1d = self.conv1d_2(sequence_output1d_1)
         print(f"sequence_output1d : {sequence_output1d.shape}")
 
-        sequence_output1d = conv_linear(sequence_output1d)
+        sequence_output1d = self.conv_linear(sequence_output1d)
         sequence_output1d = sequence_output1d.permute(0,2,1).contiguous()
 
         #Skip connection from Bert Layer
