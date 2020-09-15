@@ -338,6 +338,7 @@ def evaluate(args, model, tokenizer, prefix=""):
                 "scene_dataset": scene_dataset,
                 "scene_dict": sceneDict,
                 "embedding": embedding,
+                "titles":batch[9]
             }
 
             if args.model_type in ["xlm", "roberta", "distilbert", "camembert"]:
