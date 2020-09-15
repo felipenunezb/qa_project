@@ -2585,7 +2585,7 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(3*config.hidden_size, self.num_choices))
 
         self.scene_emb = LoadSceneGraph_dict(config)
-        self.conv_linear = nn.Linear(config.hidden_size+150, config.hidden_size)
+        self.conv_linear = nn.Linear(384+150, 384)
 
         self.conv1d_1 = nn.Conv1d(in_channels=2*config.hidden_size,out_channels=3*config.hidden_size//2,kernel_size=3,padding=1)
         self.conv1d_2 = nn.Conv1d(in_channels=3*config.hidden_size//2,out_channels=config.hidden_size,kernel_size=3,padding=1)
