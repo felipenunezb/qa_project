@@ -1001,6 +1001,15 @@ def initEmbRandom(num, dim):
                                     size=(num, dim))
     return embeddings
 
+def sentenceEmb(sentence, wordVectors, dim):
+        words = sentence.split(" ")
+        wordEmbs = initEmbRandom(len(words), dim)
+        for idx, word in enumerate(words):
+            if word in wordVectors:
+                wordEmbs[idx] = wordVectors[word]
+        sentenceEmb = np.mean(wordEmbs, axis=0)
+        return sentenceEmb
+        
 def initializeWordEmbeddings(dim, wordsDict=None, random=False, filename=None):
 
     embeddings = initEmbRandom(wordsDict.getNumSymbols(), dim)
