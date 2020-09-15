@@ -2662,21 +2662,21 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
         scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
         cdeencoded_layers_sg = torch.cat((cdeencoded_layers, scenedata), dim=1)
         qdeencoded_layers_sg = torch.cat((qdeencoded_layers, scenedata), dim=1)
-        print(f"qdeencoded_layers_sg: {qdeencoded_layers_sg.shape}")
+        #print(f"qdeencoded_layers_sg: {qdeencoded_layers_sg.shape}")
 
         cdeencoded_layers_sg = cdeencoded_layers_sg.unsqueeze(-1)
         qdeencoded_layers_sg = qdeencoded_layers_sg.unsqueeze(-1)
         enc_cat = torch.cat((cdeencoded_layers_sg,qdeencoded_layers_sg), dim=-1)
-        print(f"enc_cat: {enc_cat.shape}")
+        #print(f"enc_cat: {enc_cat.shape}")
 
         encshape = enc_cat.shape
         enc_cat = enc_cat.reshape(encshape[0],encshape[1],-1).contiguous()
-        print(f"enc_cat2: {enc_cat.shape}")
+        #print(f"enc_cat2: {enc_cat.shape}")
         enc_cat = enc_cat.permute(0,2,1).contiguous()
-        print(f"enc_cat3: {enc_cat.shape}")
+        #print(f"enc_cat3: {enc_cat.shape}")
         sequence_output1d_1 = self.conv1d_1(enc_cat)
         sequence_output1d = self.conv1d_2(sequence_output1d_1)
-        print(f"sequence_output1d : {sequence_output1d.shape}")
+        #print(f"sequence_output1d : {sequence_output1d.shape}")
 
         sequence_output1d = self.conv_linear(sequence_output1d)
         sequence_output1d = sequence_output1d.permute(0,2,1).contiguous()
