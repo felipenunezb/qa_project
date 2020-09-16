@@ -678,6 +678,15 @@ def main():
 
     parser.add_argument("--threads", type=int, default=1, help="multiple threads for converting example to features")
 
+    parser.add_argument("--scene_file", type=str, default=None, help="The input scene graph file. Should contain the .json files for the SQuAD task.")
+
+    parser.add_argument("--cached_embedding", type=str, default=None, help="The scene graph vocab embedding file.")
+
+    parser.add_argument("--emb_file", type=str, default=None, help="The input embedding file (e.g. Glove), this adds time to the total processing.")
+
+    parser.add_argument("--emb_dim", type=int, default=300, help="Embedding dimension, when raw file is provided. If cached embedding is provided, this is not needed.")
+
+
     args = parser.parse_args()
 
     if args.doc_stride >= args.max_seq_length - args.max_query_length:
