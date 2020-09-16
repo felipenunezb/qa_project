@@ -31,11 +31,11 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
 from transformers import (
-    MODEL_FOR_QUESTION_ANSWERING_VanillaSG_MAPPING as MODEL_FOR_QUESTION_ANSWERING_VQA_MAPPING,
+    MODEL_FOR_QUESTION_ANSWERING_STEROIDSSG_MAPPING as MODEL_FOR_QUESTION_ANSWERING_VQA_MAPPING,
     WEIGHTS_NAME,
     AdamW,
     AutoConfig,
-    AutoModelForQuestionAnsweringVQA_VanillaSG as AutoModelForQuestionAnswering,
+    AutoModelForQuestionAnsweringSteroidsSG as AutoModelForQuestionAnswering,
     AutoTokenizer,
     get_linear_schedule_with_warmup,
     squad_convert_examples_to_features,
