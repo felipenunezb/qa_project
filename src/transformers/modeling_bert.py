@@ -1070,6 +1070,7 @@ class BertModel(BertPreTrainedModel):
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
 
+        print(f"input_shape: {input_shape}")
         device = input_ids.device if input_ids is not None else inputs_embeds.device
 
         if attention_mask is None:
@@ -1125,6 +1126,145 @@ class BertModel(BertPreTrainedModel):
             attentions=encoder_outputs.attentions,
         )
 
+@add_start_docstrings(
+    "The bare Bert Model transformer outputting raw hidden-states without any specific head on top.",
+    BERT_START_DOCSTRING,
+)
+class BertModelE(BertPreTrainedModel):
+    """
+
+    The model can behave as an encoder (with only self-attention) as well
+    as a decoder, in which case a layer of cross-attention is added between
+    the self-attention layers, following the architecture described in `Attention is all you need`_ by Ashish Vaswani,
+    Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser and Illia Polosukhin.
+
+    To behave as an decoder the model needs to be initialized with the
+    :obj:`is_decoder` argument of the configuration set to :obj:`True`.
+    To be used in a Seq2Seq model, the model needs to initialized with both :obj:`is_decoder`
+    argument and :obj:`add_cross_attention` set to :obj:`True`; an
+    :obj:`encoder_hidden_states` is then expected as an input to the forward pass.
+
+    .. _`Attention is all you need`:
+        https://arxiv.org/abs/1706.03762
+
+    """
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.config = config
+
+        self.embeddings = BertEmbeddings(config)
+        self.encoder = BertEncoder(config)
+        self.pooler = BertPooler(config)
+
+        self.init_weights()
+
+    def get_input_embeddings(self):
+        return self.embeddings.word_embeddings
+
+    def set_input_embeddings(self, value):
+        self.embeddings.word_embeddings = value
+
+    def _prune_heads(self, heads_to_prune):
+        """ Prunes heads of the model.
+            heads_to_prune: dict of {layer_num: list of heads to prune in this layer}
+            See base class PreTrainedModel
+        """
+        for layer, heads in heads_to_prune.items():
+            self.encoder.layer[layer].attention.prune_heads(heads)
+
+    @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
+    @add_code_sample_docstrings(
+        tokenizer_class=_TOKENIZER_FOR_DOC,
+        checkpoint="bert-base-uncased",
+        output_type=BaseModelOutputWithPooling,
+        config_class=_CONFIG_FOR_DOC,
+    )
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        position_ids=None,
+        head_mask=None,
+        inputs_embeds=None,
+        encoder_hidden_states=None,
+        encoder_attention_mask=None,
+        output_attentions=None,
+        output_hidden_states=None,
+        return_dict=None,
+    ):
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        #if input_ids is not None and inputs_embeds is not None:
+        #    raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
+        #elif input_ids is not None:
+        #    input_shape = input_ids.size()
+        #elif inputs_embeds is not None:
+        #    input_shape = inputs_embeds.size()[:-1]
+        #else:
+        #    raise ValueError("You have to specify either input_ids or inputs_embeds")
+
+        device = input_ids.device if input_ids is not None else inputs_embeds.device
+
+        input_shape = list(input_ids.size())
+        input_shape[1] = 512  #384 + 128 for scene embedding
+        #if attention_mask is None:
+        attention_mask = torch.ones(input_shape, device=device)
+        #if token_type_ids is None:
+        token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
+
+        # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
+        # ourselves in which case we just need to make it broadcastable to all heads.
+        extended_attention_mask: torch.Tensor = self.get_extended_attention_mask(attention_mask, input_shape, device)
+
+        # If a 2D ou 3D attention mask is provided for the cross-attention
+        # we need to make broadcastabe to [batch_size, num_heads, seq_length, seq_length]
+        if self.config.is_decoder and encoder_hidden_states is not None:
+            encoder_batch_size, encoder_sequence_length, _ = encoder_hidden_states.size()
+            encoder_hidden_shape = (encoder_batch_size, encoder_sequence_length)
+            if encoder_attention_mask is None:
+                encoder_attention_mask = torch.ones(encoder_hidden_shape, device=device)
+            encoder_extended_attention_mask = self.invert_attention_mask(encoder_attention_mask)
+        else:
+            encoder_extended_attention_mask = None
+
+        # Prepare head mask if needed
+        # 1.0 in head_mask indicate we keep the head
+        # attention_probs has shape bsz x n_heads x N x N
+        # input head_mask has shape [num_heads] or [num_hidden_layers x num_heads]
+        # and head_mask is converted to shape [num_hidden_layers x batch x num_heads x seq_length x seq_length]
+        head_mask = self.get_head_mask(head_mask, self.config.num_hidden_layers)
+
+        embedding_output = self.embeddings(
+            input_ids=input_ids, position_ids=position_ids, token_type_ids=token_type_ids, inputs_embeds=inputs_embeds
+        )
+        encoder_outputs = self.encoder(
+            embedding_output,
+            attention_mask=extended_attention_mask,
+            head_mask=head_mask,
+            encoder_hidden_states=encoder_hidden_states,
+            encoder_attention_mask=encoder_extended_attention_mask,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
+        sequence_output = encoder_outputs[0]
+        pooled_output = self.pooler(sequence_output)
+
+        if not return_dict:
+            return (sequence_output, pooled_output) + encoder_outputs[1:]
+
+        return BaseModelOutputWithPooling(
+            last_hidden_state=sequence_output,
+            pooler_output=pooled_output,
+            hidden_states=encoder_outputs.hidden_states,
+            attentions=encoder_outputs.attentions,
+        )
 
 class BertModelS(BertPreTrainedModel):
     """BERT model ("Bidirectional Embedding Representations from a Transformer").
@@ -2740,6 +2880,133 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
 
         if not return_dict:
             output = (start_logits, end_logits, orig_ans_log) #+ outputs[2:]
+            return ((total_loss,) + output) if total_loss is not None else output
+
+        return QuestionAnsweringModelOutput(
+            loss=total_loss,
+            start_logits=start_logits,
+            end_logits=end_logits,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
+
+
+@add_start_docstrings(
+    """Bert Model with a span classification head on top for extractive question-answering tasks like SQuAD (a linear
+    layers on top of the hidden-states output to compute `span start logits` and `span end logits`). """,
+    BERT_START_DOCSTRING,
+)
+class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.num_labels = config.num_labels
+        self.num_choices = 2914
+        self.bert = BertModel(config)
+        self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
+        self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
+        self.scene_emb = LoadSceneGraph_dict(config)
+        self.init_weights()
+
+    @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
+    @add_code_sample_docstrings(
+        tokenizer_class=_TOKENIZER_FOR_DOC,
+        checkpoint="bert-base-uncased",
+        output_type=QuestionAnsweringModelOutput,
+        config_class=_CONFIG_FOR_DOC,
+    )
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        position_ids=None,
+        head_mask=None,
+        inputs_embeds=None,
+        start_positions=None,
+        end_positions=None,
+        is_impossibles=None,
+        orig_answers=None,
+        titles=None,
+        output_attentions=None,
+        output_hidden_states=None,
+        return_dict=None,
+        scene_dataset=None,
+        scene_dict=None,
+        embedding=None,
+    ):
+        r"""
+        start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
+            Labels for position (index) of the start of the labelled span for computing the token classification loss.
+            Positions are clamped to the length of the sequence (`sequence_length`).
+            Position outside of the sequence are not taken into account for computing the loss.
+        end_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
+            Labels for position (index) of the end of the labelled span for computing the token classification loss.
+            Positions are clamped to the length of the sequence (`sequence_length`).
+            Position outside of the sequence are not taken into account for computing the loss.
+        """
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        outputs = self.bert(
+            input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            position_ids=position_ids,
+            head_mask=head_mask,
+            inputs_embeds=inputs_embeds,
+            output_attentions=output_attentions,
+            output_hidden_states=True, #output_hidden_states,
+            return_dict=return_dict,
+        )
+
+        sequence_output = outputs[0]
+
+        scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
+
+        logits = self.qa_outputs(sequence_output)
+        start_logits, end_logits = logits.split(1, dim=-1)
+        start_logits = start_logits.squeeze(-1)
+        end_logits = end_logits.squeeze(-1)
+
+        #mean of second to last layer of hidden states
+        voter_1 = torch.mean(torch.cat((outputs[2][-2],scenedata),dim=1), dim=1)
+        #mean of last layer of hidden states
+        voter_2 = torch.mean(torch.cat((outputs[2][-1],scenedata),dim=1), dim=1)
+        #mean of both voters
+        voter_3 = torch.mean(torch.stack([voter_1, voter_2]), dim=0)
+        #max of both voters
+        voter_4 = torch.max(voter_1, voter_2)
+        
+        sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4), dim=1)
+
+        orig_ans_log = self.orig_ans_choice(sequence_mean)
+
+        #print(f"orig_answers: {orig_answers.shape}")
+        #print(f"orig_ans_log: {orig_ans_log.shape}")
+
+        total_loss = None
+        if start_positions is not None and end_positions is not None:
+            # If we are on multi-GPU, split add a dimension
+            if len(start_positions.size()) > 1:
+                start_positions = start_positions.squeeze(-1)
+            if len(end_positions.size()) > 1:
+                end_positions = end_positions.squeeze(-1)
+            if len(orig_answers.size()) > 1:
+                orig_answers = orig_answers.squeeze(-1)
+            # sometimes the start/end positions are outside our model inputs, we ignore these terms
+            ignored_index = start_logits.size(1)
+            start_positions.clamp_(0, ignored_index)
+            end_positions.clamp_(0, ignored_index)
+            #orig_answers.clamp_(0, ignored_index)
+
+            loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
+            start_loss = loss_fct(start_logits, start_positions)
+            end_loss = loss_fct(end_logits, end_positions)
+            loss_fct_c = CrossEntropyLoss()
+            choice_loss = loss_fct_c(orig_ans_log, orig_answers)
+            total_loss = (start_loss + end_loss + choice_loss) / 3
+
+        if not return_dict:
+            output = (start_logits, end_logits, orig_ans_log,) #+ outputs[2:]
             return ((total_loss,) + output) if total_loss is not None else output
 
         return QuestionAnsweringModelOutput(
