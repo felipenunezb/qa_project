@@ -1070,7 +1070,7 @@ class BertModel(BertPreTrainedModel):
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
 
-        print(f"input_shape: {input_shape}")
+        #print(f"input_shape: {input_shape}")
         device = input_ids.device if input_ids is not None else inputs_embeds.device
 
         if attention_mask is None:
@@ -1103,6 +1103,7 @@ class BertModel(BertPreTrainedModel):
         embedding_output = self.embeddings(
             input_ids=input_ids, position_ids=position_ids, token_type_ids=token_type_ids, inputs_embeds=inputs_embeds
         )
+        print(embedding_output.shape)
         encoder_outputs = self.encoder(
             embedding_output,
             attention_mask=extended_attention_mask,
