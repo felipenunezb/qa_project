@@ -1223,7 +1223,7 @@ class BertModelE(BertPreTrainedModel):
         #if attention_mask is None:
         attention_mask = torch.ones(input_shape, device=device)
         #if token_type_ids is None:
-        token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
+        #token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
 
         # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
         # ourselves in which case we just need to make it broadcastable to all heads.
