@@ -78,7 +78,7 @@ from .modeling_bert import (
     BertForQuestionAnsweringSteroids,
     BertForQuestionAnsweringVanillaSG,
     BertForQuestionAnsweringSteroidsSG,
-    BertForQuestionAnsweringE,
+    BertForQuestionAnsweringEnriched,
 )
 from .modeling_camembert import (
     CamembertForMaskedLM,
@@ -423,7 +423,7 @@ MODEL_FOR_QUESTION_ANSWERING_STEROIDSSG_MAPPING = OrderedDict(
 
 MODEL_FOR_QUESTION_ANSWERING_E_MAPPING = OrderedDict(
     [
-        (BertConfig, BertForQuestionAnsweringE),
+        (BertConfig, BertForQuestionAnsweringEnriched),
     ]
 )
 
