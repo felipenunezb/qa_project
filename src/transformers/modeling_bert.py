@@ -1157,6 +1157,7 @@ class BertModelE(BertPreTrainedModel):
         self.embeddings = BertEmbeddings(config)
         self.encoder = BertEncoder(config)
         self.pooler = BertPooler(config)
+        self.scene_emb = LoadSceneGraph_dict(config)
 
         self.init_weights()
 
@@ -1194,7 +1195,12 @@ class BertModelE(BertPreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        titles=None,
+        scene_dataset=None, 
+        embedding=None, 
+        scene_dict=None,
     ):
+
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -1244,6 +1250,18 @@ class BertModelE(BertPreTrainedModel):
         embedding_output = self.embeddings(
             input_ids=input_ids, position_ids=position_ids, token_type_ids=token_type_ids, inputs_embeds=inputs_embeds
         )
+
+        print(f"embedding_output: {embedding_output.shape}")
+        scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
+        print(f"prior scenedata: {scenedata.shape}")
+        #Only keep the first 128 objects, to avoid going beyond the 512 tokens
+        scenedata = scenedata[:, :128, :] 
+        print(f"after scenedata: {scenedata.shape}")
+
+        #Concat regular embedding plus 128 objects scene graph embedding
+        embedding_output = torch.cat((embedding_output, scenedata), dim=1)
+        print(f"embedding_output: {embedding_output.shape}")
+
         encoder_outputs = self.encoder(
             embedding_output,
             attention_mask=extended_attention_mask,
@@ -2902,10 +2920,10 @@ class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
         super().__init__(config)
         self.num_labels = config.num_labels
         self.num_choices = 2914
-        self.bert = BertModel(config)
+        self.bert = BertModelE(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
-        self.scene_emb = LoadSceneGraph_dict(config)
+        
         self.init_weights()
 
     @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
@@ -2957,11 +2975,15 @@ class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=True, #output_hidden_states,
             return_dict=return_dict,
+            titles=titles,
+            scene_dataset=scene_dataset,
+            scene_dict=scene_dict,
+            embedding=embedding,
         )
 
         sequence_output = outputs[0]
 
-        scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
+        #scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
 
         logits = self.qa_outputs(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
@@ -2969,9 +2991,9 @@ class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
         end_logits = end_logits.squeeze(-1)
 
         #mean of second to last layer of hidden states
-        voter_1 = torch.mean(torch.cat((outputs[2][-2],scenedata),dim=1), dim=1)
+        voter_1 = torch.mean(outputs[2][-2], dim=1)
         #mean of last layer of hidden states
-        voter_2 = torch.mean(torch.cat((outputs[2][-1],scenedata),dim=1), dim=1)
+        voter_2 = torch.mean(outputs[2][-1], dim=1)
         #mean of both voters
         voter_3 = torch.mean(torch.stack([voter_1, voter_2]), dim=0)
         #max of both voters

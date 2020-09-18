@@ -203,6 +203,7 @@ if is_torch_available():
         AutoModelForQuestionAnsweringSteroids,
         AutoModelForQuestionAnsweringVQA_VanillaSG,
         AutoModelForQuestionAnsweringSteroidsSG,
+        AutoModelForQuestionAnsweringE,
         AutoModelWithLMHead,
         AutoModelForCausalLM,
         AutoModelForMaskedLM,
@@ -225,6 +226,7 @@ if is_torch_available():
         MODEL_FOR_QUESTION_ANSWERING_STEROIDS_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_VanillaSG_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_STEROIDSSG_MAPPING,
+        MODEL_FOR_QUESTION_ANSWERING_E_MAPPING,
         MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING,
         MODEL_FOR_MULTIPLE_CHOICE_MAPPING,
     )
@@ -259,6 +261,7 @@ if is_torch_available():
         BERT_PRETRAINED_MODEL_ARCHIVE_LIST,
         BertLayer,
         BertModelS,
+        BertModelE,
     )
     from .modeling_openai import (
         OpenAIGPTPreTrainedModel,
