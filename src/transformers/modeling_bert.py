@@ -1251,16 +1251,16 @@ class BertModelE(BertPreTrainedModel):
             input_ids=input_ids, position_ids=position_ids, token_type_ids=token_type_ids, inputs_embeds=inputs_embeds
         )
 
-        print(f"embedding_output: {embedding_output.shape}")
+        #print(f"embedding_output: {embedding_output.shape}")
         scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
-        print(f"prior scenedata: {scenedata.shape}")
+        #print(f"prior scenedata: {scenedata.shape}")
         #Only keep the first 128 objects, to avoid going beyond the 512 tokens
         scenedata = scenedata[:, :128, :] 
-        print(f"after scenedata: {scenedata.shape}")
+        #print(f"after scenedata: {scenedata.shape}")
 
         #Concat regular embedding plus 128 objects scene graph embedding
         embedding_output = torch.cat((embedding_output, scenedata), dim=1)
-        print(f"embedding_output: {embedding_output.shape}")
+        #print(f"embedding_output: {embedding_output.shape}")
 
         encoder_outputs = self.encoder(
             embedding_output,
@@ -2981,7 +2981,7 @@ class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
             embedding=embedding,
         )
 
-        sequence_output = outputs[0]
+        sequence_output = outputs[0][:, :384, :]
 
         #scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
 
