@@ -13,28 +13,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" Finetuning the library models for sequence classification on HANS."""
+""" Fine-tuning the library models for question-answering."""
+
 
 import logging
 import os
+import sys
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
-
-import numpy as np
+from typing import Optional
 import torch
+from tqdm.auto import tqdm, trange
+import json
 
-from transformers import (
-    AutoConfig,
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    HfArgumentParser,
-    Trainer,
-    TrainingArguments,
-    default_data_collator,
-    set_seed,
-)
-from utils_hans import HansDataset, InputFeatures, hans_processors, hans_tasks_num_labels
-
+from transformers import AutoConfig, AutoModelForQuestionAnsweringE as AutoModelForQuestionAnswering, AutoTokenizer, HfArgumentParser, SquadDataset
+from transformers import SquadDataTrainingArguments as DataTrainingArguments
+from transformers import Trainer, TrainingArguments
+from transformers import squad_convert_examples_to_features
+from transformers.data.processors.squad_vqa import SquadResult, SquadV1Processor, SquadV2Processor, SquadProcessor, initializeWordEmbeddings
+from transformers import SymbolDict, initEmbRandom
 
 logger = logging.getLogger(__name__)
 
@@ -54,43 +50,15 @@ class ModelArguments:
     tokenizer_name: Optional[str] = field(
         default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
     )
+    use_fast: bool = field(default=False, metadata={"help": "Set this flag to use fast tokenization."})
+    # If you want to tweak more attributes on your tokenizer, you should do it in a distinct script,
+    # or just modify its tokenizer_config.json.
     cache_dir: Optional[str] = field(
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
-
-
-@dataclass
-class DataTrainingArguments:
-    """
-    Arguments pertaining to what data we are going to input our model for training and eval.
-    """
-
-    task_name: str = field(
-        metadata={"help": "The name of the task to train selected in the list: " + ", ".join(hans_processors.keys())}
+    predict_file: Optional[str] = field(
+        default='dev-v2.0.json', metadata={"help": "File to Evaluate"}
     )
-    data_dir: str = field(
-        metadata={"help": "The input data dir. Should contain the .tsv files (or other data files) for the task."}
-    )
-    max_seq_length: int = field(
-        default=128,
-        metadata={
-            "help": "The maximum total input sequence length after tokenization. Sequences longer "
-            "than this will be truncated, sequences shorter will be padded."
-        },
-    )
-    overwrite_cache: bool = field(
-        default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
-    )
-
-
-def hans_data_collator(features: List[InputFeatures]) -> Dict[str, torch.Tensor]:
-    """
-    Data collator that removes the "pairID" key if present.
-    """
-    batch = default_data_collator(features)
-    _ = batch.pop("pairID", None)
-    return batch
-
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
@@ -98,7 +66,13 @@ def main():
     # We now keep distinct sets of args, for a cleaner separation of concerns.
 
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
-    model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+
+    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
+        # If we pass only one argument to the script and it's the path to a json file,
+        # let's parse it to get our arguments.
+        model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+    else:
+        model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
     if (
         os.path.exists(training_args.output_dir)
@@ -126,14 +100,7 @@ def main():
     )
     logger.info("Training/evaluation parameters %s", training_args)
 
-    # Set seed
-    set_seed(training_args.seed)
-
-    try:
-        num_labels = hans_tasks_num_labels[data_args.task_name]
-    except KeyError:
-        raise ValueError("Task not found: %s" % (data_args.task_name))
-
+    # Prepare Question-Answering task
     # Load pretrained model and tokenizer
     #
     # Distributed training:
@@ -142,15 +109,13 @@ def main():
 
     config = AutoConfig.from_pretrained(
         model_args.config_name if model_args.config_name else model_args.model_name_or_path,
-        num_labels=num_labels,
-        finetuning_task=data_args.task_name,
         cache_dir=model_args.cache_dir,
     )
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
     )
-    model = AutoModelForSequenceClassification.from_pretrained(
+    model = AutoModelForQuestionAnswering.from_pretrained(
         model_args.model_name_or_path,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
         config=config,
@@ -158,38 +123,59 @@ def main():
     )
 
     # Get datasets
+    is_language_sensitive = hasattr(model.config, "lang2id")
     train_dataset = (
-        HansDataset(
-            data_dir=data_args.data_dir,
-            tokenizer=tokenizer,
-            task=data_args.task_name,
-            max_seq_length=data_args.max_seq_length,
-            overwrite_cache=data_args.overwrite_cache,
+        SquadDataset(
+            data_args, tokenizer=tokenizer, is_language_sensitive=is_language_sensitive, cache_dir=model_args.cache_dir
         )
         if training_args.do_train
         else None
     )
     eval_dataset = (
-        HansDataset(
-            data_dir=data_args.data_dir,
+        SquadDataset(
+            data_args,
             tokenizer=tokenizer,
-            task=data_args.task_name,
-            max_seq_length=data_args.max_seq_length,
-            overwrite_cache=data_args.overwrite_cache,
-            evaluate=True,
+            mode="dev",
+            is_language_sensitive=is_language_sensitive,
+            cache_dir=model_args.cache_dir,
         )
         if training_args.do_eval
         else None
     )
 
+    #Load Scene graph, if provided
+    if data_args.scene_file:
+        scene_file_path = os.path.join(data_args.data_dir, data_args.scene_file)
+        with open(scene_file_path, "r", encoding="utf-8") as reader:
+            scene_dataset = json.load(reader)
+
+        sceneDict = SymbolDict()
+        for scene in tqdm(scene_dataset.values(), desc="Creating Scene Dictionary"):
+            for obj in scene["objects"].values():
+                sceneDict.addSymbols(obj["name"])
+                sceneDict.addSymbols(obj["attributes"])
+                for rel in obj["relations"]:
+                   sceneDict.addSymbols(rel["name"])
+        #create vocab           
+        sceneDict.createVocab(minCount=0)
+
+        if data_args.cached_embedding:
+            import numpy as np
+            embedding = np.load(os.path.join(data_args.data_dir, data_args.cached_embedding))
+        elif data_args.emb_file:
+            embedding = initializeWordEmbeddings(data_args.emb_dim, 
+                                                wordsDict=sceneDict, 
+                                                random=False,
+                                                filename=os.path.join(data_args.data_dir, data_args.emb_file))
+        else:
+            embedding = initEmbRandom(sceneDict.getNumSymbols(), data_args.emb_dim)
+    else:
+        scene_dataset = None
+        sceneDict = None
+        embedding = None
+
     # Initialize our Trainer
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
-        data_collator=hans_data_collator,
-    )
+    trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset, eval_dataset=eval_dataset, scene_dataset=scene_dataset, scene_dict = sceneDict, embedding = embedding)
 
     # Training
     if training_args.do_train:
@@ -203,23 +189,37 @@ def main():
             tokenizer.save_pretrained(training_args.output_dir)
 
     # Evaluation
+    eval_results = {}
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
+        evaluate(eval_dataset, trainer)
 
-        output = trainer.predict(eval_dataset)
-        preds = output.predictions
-        preds = np.argmax(preds, axis=1)
 
-        pair_ids = [ex.pairID for ex in eval_dataset]
-        output_eval_file = os.path.join(training_args.output_dir, "hans_predictions.txt")
-        label_list = eval_dataset.get_labels()
-        if trainer.is_world_master():
-            with open(output_eval_file, "w") as writer:
-                writer.write("pairID,gold_label\n")
-                for pid, pred in zip(pair_ids, preds):
-                    writer.write("ex" + str(pid) + "," + label_list[int(pred)] + "\n")
+    return eval_results
 
-        trainer._log(output.metrics)
+def evaluate(eval_dataset, trainer):
+    eval_dataloader = trainer.get_eval_dataloader(eval_dataset)
+    batch_size = eval_dataloader.batch_size
+    # Eval!
+    logger.info("***** Running evaluation *****")
+    logger.info("  Num examples = %d", len(eval_dataset))
+    logger.info("  Batch size = %d", batch_size)
+
+    all_results = []
+    model = trainer.model
+    cnt = 0
+    for inputs in tqdm(eval_dataloader, desc="Evaluating"):
+        model.eval()
+        print(inputs.keys())
+        inputs = trainer._prepare_inputs(inputs, model)
+        cnt +=1
+
+        with torch.no_grad():
+            outputs = model(**inputs)
+            print('outputs')
+            print(outputs)
+        if cnt > 0:
+            break
 
 
 def _mp_fn(index):

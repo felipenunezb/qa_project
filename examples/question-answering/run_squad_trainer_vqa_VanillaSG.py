@@ -25,7 +25,7 @@ import torch
 from tqdm.auto import tqdm, trange
 import json
 
-from transformers import AutoConfig, AutoModelForQuestionAnsweringVQA_VanillaSG as AutoModelForQuestionAnswering, AutoTokenizer, HfArgumentParser, SquadDataset
+from transformers import AutoConfig, AutoModelForQuestionAnsweringE as AutoModelForQuestionAnswering, AutoTokenizer, HfArgumentParser, SquadDataset
 from transformers import SquadDataTrainingArguments as DataTrainingArguments
 from transformers import Trainer, TrainingArguments
 from transformers import squad_convert_examples_to_features
