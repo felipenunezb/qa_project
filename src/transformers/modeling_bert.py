@@ -2399,7 +2399,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
             start_loss = loss_fct(start_logits, start_positions)
             end_loss = loss_fct(end_logits, end_positions)
             if weights_list:
-                loss_fct_c = CrossEntropyLoss(weight = torch.tensor(weights_list))
+                loss_fct_c = CrossEntropyLoss(weight = torch.tensor(weights_list, device=titles.device))
             else:
                 loss_fct_c = CrossEntropyLoss()
             choice_loss = loss_fct_c(orig_ans_log, orig_answers)
