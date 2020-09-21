@@ -2290,7 +2290,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.num_choices = 2914
+        self.num_choices = 2913
         self.bert = BertModel(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
@@ -2420,7 +2420,7 @@ class BertForQuestionAnsweringVanillaSG(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.num_choices = 2914
+        self.num_choices = 2913
         self.bert = BertModel(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
@@ -2546,7 +2546,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.num_choices = 2914
+        self.num_choices = 2913
         self.bert = BertModelS(config)
         self.decoder = BertDirectedAttention(config)
         self.qa_outputs_start = nn.Linear(config.hidden_size, 1)
@@ -2735,7 +2735,7 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.num_choices = 2914
+        self.num_choices = 2913
         self.bert = BertModelS(config)
         self.decoder = BertDirectedAttention(config)
         self.hidden_size = config.hidden_size
@@ -2919,7 +2919,7 @@ class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.num_choices = 2914
+        self.num_choices = 2913
         self.bert = BertModelE(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
