@@ -2322,6 +2322,7 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
         scene_dataset=None,
         scene_dict=None,
         embedding=None,
+        weights_list=None,
     ):
         r"""
         start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
@@ -2397,7 +2398,10 @@ class BertForQuestionAnsweringVQAPool_MultiVote(BertPreTrainedModel):
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
             start_loss = loss_fct(start_logits, start_positions)
             end_loss = loss_fct(end_logits, end_positions)
-            loss_fct_c = CrossEntropyLoss()
+            if weights_list:
+                loss_fct_c = CrossEntropyLoss(weight = torch.tensor(weights_list))
+            else:
+                loss_fct_c = CrossEntropyLoss()
             choice_loss = loss_fct_c(orig_ans_log, orig_answers)
             total_loss = (start_loss + end_loss + choice_loss) / 3
 

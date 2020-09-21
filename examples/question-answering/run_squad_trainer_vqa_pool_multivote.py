@@ -143,6 +143,13 @@ def main():
         else None
     )
 
+    weights_filename = os.path.join(data_args.data_dir, "ans_weights.json")
+    if os.path.exists(weights_filename):
+        with open(weights_filename, "r", encoding="utf-8") as reader:
+            weights_list = json.load(reader)
+    else:
+        weights_list = None
+
     #Load Scene graph, if provided
     if data_args.scene_file:
         scene_file_path = os.path.join(data_args.data_dir, data_args.scene_file)
@@ -175,7 +182,7 @@ def main():
         embedding = None
 
     # Initialize our Trainer
-    trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset, eval_dataset=eval_dataset, scene_dataset=scene_dataset, scene_dict = sceneDict, embedding = embedding)
+    trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset, eval_dataset=eval_dataset, scene_dataset=scene_dataset, scene_dict = sceneDict, embedding = embedding, weights_list = weights_list)
 
     # Training
     if training_args.do_train:
