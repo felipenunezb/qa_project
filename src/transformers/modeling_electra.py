@@ -1096,7 +1096,7 @@ class ElectraForQuestionAnsweringVQAPool_MultiVote(ElectraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.num_choices = 2914
+        self.num_choices = 2913
         self.electra = ElectraModel(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
@@ -1121,11 +1121,16 @@ class ElectraForQuestionAnsweringVQAPool_MultiVote(ElectraPreTrainedModel):
         inputs_embeds=None,
         start_positions=None,
         end_positions=None,
-        is_impossibles=None, 
+        is_impossibles=None,
         orig_answers=None,
+        titles=None,
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        scene_dataset=None,
+        scene_dict=None,
+        embedding=None,
+        weights_list=None,
     ):
         r"""
         start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
@@ -1162,9 +1167,11 @@ class ElectraForQuestionAnsweringVQAPool_MultiVote(ElectraPreTrainedModel):
         #mean of last layer of hidden states
         voter_2 = torch.mean(discriminator_hidden_states[1][-1], dim=1)
         #mean of both voters
-        voter_3 = torch.mean(torch.stack([voter_1, voter_2]), dim=0)
+        #voter_3 = torch.mean(torch.stack([voter_1, voter_2]), dim=0)
+        voter_3 = torch.mean(discriminator_hidden_states[1][-3], dim=1)
         #max of both voters
-        voter_4 = torch.max(voter_1, voter_2)
+        #voter_4 = torch.max(voter_1, voter_2)
+        voter_4 = torch.mean(discriminator_hidden_states[1][-4], dim=1)
 
         #print(voter_1.size(), '\n')
         #print(voter_2.size(), '\n')
