@@ -219,6 +219,8 @@ class BertEmbeddings(nn.Module):
         position_embeddings = self.position_embeddings(position_ids)
         token_type_embeddings = self.token_type_embeddings(token_type_ids)
 
+        print(position_embeddings.shape)
+        print(token_type_embeddings.shape)
         embeddings = inputs_embeds + position_embeddings + token_type_embeddings
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
@@ -1292,15 +1294,14 @@ class BertModelE(BertPreTrainedModel):
         embedding_output = self.embeddings(
             input_ids=input_ids, position_ids=position_ids, token_type_ids=token_type_ids, inputs_embeds=inputs_embeds
         )
-        print(embedding_output[0, :, :])
+    
 
         #print(f"embedding_output: {embedding_output.shape}")
         scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
         print(f"prior scenedata: {scenedata.shape}")
         #Only keep the first 128 objects, to avoid going beyond the 512 tokens
-        scenedata = self.linear_scene(scenedata) #scenedata[:, :128, :] 
-        #print(f"after scenedata: {scenedata.shape}")
-
+        scenedata = self.linear_scene(scenedata.permute(0,2,1)).permute(0,2,1) #scenedata[:, :128, :] 
+        print(f"after scenedata: {scenedata.shape}")
 
 
         #Concat regular embedding plus 128 objects scene graph embedding
