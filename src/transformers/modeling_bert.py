@@ -208,9 +208,8 @@ class BertEmbeddings(nn.Module):
 
         seq_length = input_shape[1]
 
-        print(f'cls {input_ids.index(101)}')
-        print(f'sep {input_ids.index(102)}')
-        print(f' all sep: {[i for i,x in enumerate(input_ids) if x==102]}')
+        print(f'cls {print ((t == 101).nonzero())}')
+        print(f'sep {print ((t == 102).nonzero())}')
 
         if position_ids is None:
             position_ids = self.position_ids[:, :seq_length]
