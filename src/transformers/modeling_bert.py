@@ -1158,6 +1158,7 @@ class BertModelE(BertPreTrainedModel):
         self.encoder = BertEncoder(config)
         self.pooler = BertPooler(config)
         self.scene_emb = LoadSceneGraph_dict(config)
+        self.linear2 = nn.Linear(150, 128)
 
         self.init_weights()
 
@@ -1255,11 +1256,11 @@ class BertModelE(BertPreTrainedModel):
         scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
         #print(f"prior scenedata: {scenedata.shape}")
         #Only keep the first 128 objects, to avoid going beyond the 512 tokens
-        scenedata = scenedata[:, :128, :] 
+        scenedata = self.linear2(scenedata) #scenedata[:, :128, :] 
         #print(f"after scenedata: {scenedata.shape}")
 
         #Concat regular embedding plus 128 objects scene graph embedding
-        embedding_output = torch.cat((embedding_output, scenedata), dim=1)
+        embedding_output = torch.cat((embedding_output[:,:-1,:], scenedata, embedding_output[:,-1,:]), dim=1)
         #print(f"embedding_output: {embedding_output.shape}")
 
         encoder_outputs = self.encoder(
@@ -2155,84 +2156,18 @@ class BertForQuestionAnswering(BertPreTrainedModel):
             attentions=outputs.attentions,
         )
 
-class LoadSceneGraph(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.embedding = flair_embedding
-        self.dense = nn.Linear(3*config.hidden_size, config.hidden_size)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
-
-    def forward(self, titles, scene_dataset):
-        titles_len = len(titles)
-        imageBatch = torch.zeros((titles_len, 150, 2304))
-        for i, title in enumerate(titles):
-            sceneObjs = [obj["name"] for obj in scene_dataset[str(title.item())]["objects"].values()]
-            sceneAttrs = [obj["attributes"] for obj in scene_dataset[str(title.item())]["objects"].values()]
-            sceneRels = []
-            for obj in scene_dataset[str(title.item())]["objects"].values():
-                relations = []
-                for rel in obj["relations"]:
-                    relations.append((rel["name"], scene_dataset[str(title.item())]["objects"][rel["object"]]["name"]))
-                sceneRels.append(relations)
-
-            objectEmbeddings = torch.zeros((150, 768))
-            for j, obj in enumerate(sceneObjs):
-                obj_emb_tmp = Sentence(obj)
-                self.embedding.embed(obj_emb_tmp)
-                mean_tmp = torch.mean(torch.stack([token.get_embedding() for token in obj_emb_tmp]), dim=0)
-                objectEmbeddings[j, :] = mean_tmp             
-
-            attrEmbeddings = torch.zeros((150, 768))
-            for j, attrs in enumerate(sceneAttrs):
-                if len(attrs) != 0:
-                    wordEmbs = torch.zeros((len(attrs), 768))
-                    for i_a, attr in enumerate(attrs):
-                        attr_emb_tmp = Sentence(attr)
-                        self.embedding.embed(attr_emb_tmp)
-                        wordEmbs[i_a] = torch.mean(torch.stack([token.get_embedding() for token in attr_emb_tmp]), dim=0)
-                    
-                    attrEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
-                    
-            relsEmbeddings = torch.zeros((150, 768))
-            for j, rels in enumerate(sceneRels):
-                if len(rels) != 0:
-                    wordEmbs = torch.zeros((len(rels), 768))
-                    for i_r, rel in enumerate(rels):
-                        rel0 = Sentence(rel[0])
-                        rel1 = Sentence(rel[1])
-                        self.embedding.embed(rel0)
-                        self.embedding.embed(rel1)
-                        rel0_mean = torch.mean(torch.stack([token.get_embedding() for token in rel0]), dim=0)
-                        rel1_mean = torch.mean(torch.stack([token.get_embedding() for token in rel1]), dim=0)
-                        wordEmbs[i_r] = torch.mean(torch.stack((rel0_mean, rel1_mean)), dim=0)
-                    relsEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
-                                
-            print(torch.cat((objectEmbeddings, attrEmbeddings, relsEmbeddings), dim=-1).shape)
-            imageBatch[i] = torch.cat((objectEmbeddings, attrEmbeddings, relsEmbeddings), dim=-1)
-
-        hidden_states = self.dense(imageBatch)
-        hidden_states = self.dropout(hidden_states)
-        return hidden_states
-
-def initEmbRandom(num, dim):
-    # uniform initialization
-    
-    lowInit = -1.0
-    highInit = 1.0
-    embeddings = np.random.uniform(low=lowInit, high=highInit,
-                                    size=(num, dim))
-    return embeddings
-
 class LoadSceneGraph_dict(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(900, config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.LSTM_encoder = nn.LSTM(300,config.hidden_size,num_layers=1,batch_first=True,dropout=0.1,bidirectional=False)
+        self.hidden_size = config.hidden_size
 
     def forward(self, titles, scene_dataset, embedding, sceneDict):
         device = titles.device
         titles_len = len(titles)
-        imageBatch = torch.zeros((titles_len, 150, 900), device=device)
+        imageBatch = torch.zeros((titles_len, 150, self.hidden_size), device=device)
         for i, title in enumerate(titles):
             sceneObjs = [obj["name"] for obj in scene_dataset[str(title.item())]["objects"].values()]
             sceneAttrs = [obj["attributes"] for obj in scene_dataset[str(title.item())]["objects"].values()]
@@ -2273,12 +2208,14 @@ class LoadSceneGraph_dict(nn.Module):
                     for i_r, rel in enumerate(rels):
                         wordEmbs[i_r] = torch.tensor((embedding[rel[0]] + embedding[rel[1]]) / 2, device=device)
                     relsEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
+            
+            pre_lstm = torch.cat((objectEmbeddings.unsqueeze(1), attrEmbeddings.unsqueeze(1), relsEmbeddings.unsqueeze(1)), dim=1)
+            _, (hidden_state, _) = self.LSTM(pre_lstm)
+            imageBatch[i] = hidden_state[0]
 
-            imageBatch[i] = torch.cat((objectEmbeddings, attrEmbeddings, relsEmbeddings), dim=-1)
-
-        hidden_states = self.dense(imageBatch)
-        hidden_states = self.dropout(hidden_states)
-        return hidden_states
+        #hidden_states = self.dense(imageBatch)
+        #hidden_states = self.dropout(hidden_states)
+        return imageBatch #hidden_states
 
 
 @add_start_docstrings(
@@ -2929,7 +2866,8 @@ class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
         self.bert = BertModelE(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
-        
+        self.linear2 = nn.Linear(384+150, 384)
+
         self.init_weights()
 
     @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
@@ -2987,7 +2925,7 @@ class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
             embedding=embedding,
         )
 
-        sequence_output = outputs[0][:, :384, :]
+        sequence_output = self.linear2(outputs[0]) #[:, :384, :] #first enriched try
 
         #scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
 
@@ -3001,9 +2939,11 @@ class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
         #mean of last layer of hidden states
         voter_2 = torch.mean(outputs[2][-1], dim=1)
         #mean of both voters
-        voter_3 = torch.mean(torch.stack([voter_1, voter_2]), dim=0)
+        #voter_3 = torch.mean(torch.stack([voter_1, voter_2]), dim=0)
+        voter_3 = torch.mean(outputs[2][-3], dim=1)
         #max of both voters
-        voter_4 = torch.max(voter_1, voter_2)
+        #voter_4 = torch.max(voter_1, voter_2)
+        voter_4 = torch.mean(outputs[2][-4], dim=1)
         
         sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4), dim=1)
 
@@ -3025,7 +2965,6 @@ class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
             ignored_index = start_logits.size(1)
             start_positions.clamp_(0, ignored_index)
             end_positions.clamp_(0, ignored_index)
-            #orig_answers.clamp_(0, ignored_index)
 
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
             start_loss = loss_fct(start_logits, start_positions)
