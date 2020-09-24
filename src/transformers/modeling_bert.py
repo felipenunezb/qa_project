@@ -220,7 +220,9 @@ class BertEmbeddings(nn.Module):
         token_type_embeddings = self.token_type_embeddings(token_type_ids)
 
         print(position_embeddings.shape)
+        print(f"position: {position_embeddings[0,:,:]}")
         print(token_type_embeddings.shape)
+        print(f"type: {position_embeddings[0,:,:]}")
         embeddings = inputs_embeds + position_embeddings + token_type_embeddings
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
