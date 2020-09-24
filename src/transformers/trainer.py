@@ -748,7 +748,7 @@ class Trainer:
         model.train()
         inputs = self._prepare_inputs(inputs, model)
         #print(inputs)
-        dict_upd = {'scene_dataset':self.scene_data, 'scene_dict':self.scene_dict, 'embedding':self.embedding, 'weights_list':self.weights_list}
+        dict_upd = {'scene_dataset':self.scene_data, 'scene_dict':self.scene_dict, 'embedding':self.embedding}
         #add scene data
         inputs.update(dict_upd)
 
