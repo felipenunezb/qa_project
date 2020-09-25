@@ -1439,8 +1439,8 @@ class BertModelS(BertPreTrainedModel):
         if scene_dataset:
             complement_shape = input_shape
             complement_shape[1] = 128
-            token_type_ids = torch.cat((token_type_ids, torch.ones(complement_shape, device=device)), 1)
-        qattention_mask = attention_mask - token_type_ids
+            token_type_ids2 = torch.cat((token_type_ids, torch.ones(complement_shape, device=device)), 1)
+        qattention_mask = attention_mask - token_type_ids2
         cattention_mask = attention_mask - qattention_mask
         #print('*************************') 
         #print('cattention_mask',cattention_mask)
