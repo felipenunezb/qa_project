@@ -663,7 +663,7 @@ class BertOutput(nn.Module):
         return hidden_states
 
 
-class BertLayer(nn.Module):
+`class BertLayer`(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
@@ -1206,7 +1206,8 @@ class BertModelE(BertPreTrainedModel):
         self.encoder = BertEncoder(config)
         self.pooler = BertPooler(config)
         self.scene_emb = LoadSceneGraph_dict(config)
-        self.linear_scene = nn.Linear(384+150, 384)
+        #self.linear_scene = nn.Linear(384+150, 384)
+        self.linear_scene = nn.Linear(150, 128)
 
         self.init_weights()
 
@@ -1256,19 +1257,24 @@ class BertModelE(BertPreTrainedModel):
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        if input_ids is not None and inputs_embeds is not None:
-            raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
-        elif input_ids is not None:
-            input_shape = input_ids.size()
-        elif inputs_embeds is not None:
-            input_shape = inputs_embeds.size()[:-1]
-        else:
-            raise ValueError("You have to specify either input_ids or inputs_embeds")
+        #if input_ids is not None and inputs_embeds is not None:
+        #    raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
+        #elif input_ids is not None:
+        #    input_shape = input_ids.size()
+        #elif inputs_embeds is not None:
+        #    input_shape = inputs_embeds.size()[:-1]
+        #else:
+        #    raise ValueError("You have to specify either input_ids or inputs_embeds")
 
         device = input_ids.device if input_ids is not None else inputs_embeds.device
 
-        if attention_mask is None:
-            attention_mask = torch.ones(input_shape, device=device)
+        input_shape = list(input_ids.size())
+        input_shape[1] = 512  #384 + 128 for scene embedding
+        #if attention_mask is None:
+        attention_mask = torch.ones(input_shape, device=device)
+
+        #if attention_mask is None:
+        #    attention_mask = torch.ones(input_shape, device=device)
         if token_type_ids is None:
             token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
 
@@ -1302,14 +1308,14 @@ class BertModelE(BertPreTrainedModel):
         scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
         #print(f"prior scenedata: {scenedata.shape}")
         #Only keep the first 128 objects, to avoid going beyond the 512 tokens
-        #scenedata = self.linear_scene(scenedata.permute(0,2,1)).permute(0,2,1) #scenedata[:, :128, :] 
+        scenedata = self.linear_scene(scenedata.permute(0,2,1)).permute(0,2,1) #scenedata[:, :128, :] 
         #print(f"after scenedata: {scenedata.shape}")
 
 
         #Concat regular embedding plus 128 objects scene graph embedding
         embedding_output = torch.cat((embedding_output, scenedata), dim=1)   #dim (batch, seq_len + 150, hidden)
         #print(f"embedding_output: {embedding_output.shape}")
-        embedding_output = self.linear_scene(embedding_output.permute(0,2,1)).permute(0,2,1)
+        #embedding_output = self.linear_scene(embedding_output.permute(0,2,1)).permute(0,2,1)
 
         encoder_outputs = self.encoder(
             embedding_output,
@@ -2935,7 +2941,7 @@ class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
         self.bert = BertModelE(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
-        #self.linear2 = nn.Linear(384+150, 384)
+        self.linear2 = nn.Linear(512, 384)
 
         self.init_weights()
 
@@ -2996,6 +3002,7 @@ class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
 
         #sequence_output = self.linear2(outputs[0]) #[:, :384, :] #first enriched try
         sequence_output = outputs[0]
+        sequence_output = self.linear2(sequence_output.permute(0,2,1)).permute(0,2,1)
         #scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
 
         logits = self.qa_outputs(sequence_output)
