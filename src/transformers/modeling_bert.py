@@ -1329,7 +1329,7 @@ class BertModelE(BertPreTrainedModel):
             return_dict=return_dict,
         )
         sequence_output = encoder_outputs[0]
-        sequence_output = self.linear_out(sequence_output.permute(0,2,1)).permute(0,2,1)
+        #sequence_output = self.linear_out(sequence_output.permute(0,2,1)).permute(0,2,1)
         pooled_output = self.pooler(sequence_output)
 
         if not return_dict:
@@ -3002,8 +3002,8 @@ class BertForQuestionAnsweringEnriched(BertPreTrainedModel):
             embedding=embedding,
         )
 
-        #sequence_output = self.linear2(outputs[0]) #[:, :384, :] #first enriched try
-        sequence_output = outputs[0]
+        sequence_output = outputs[0][:, :384, :] #first enriched try
+        #sequence_output = outputs[0]
         #sequence_output = self.linear2(sequence_output.permute(0,2,1)).permute(0,2,1)
         #scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
 
