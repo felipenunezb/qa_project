@@ -1436,6 +1436,10 @@ class BertModelS(BertPreTrainedModel):
         #print('extended_attention_mask',extended_attention_mask)
         #print('attention_mask',attention_mask)
         #print('token_type_ids',token_type_ids)
+        if scene_dataset:
+            complement_shape = input_shape
+            complement_shape[1] = 128
+            token_type_ids = torch.cat((token_type_ids, torch.ones(complement_shape, device=device)), 1)
         qattention_mask = attention_mask - token_type_ids
         cattention_mask = attention_mask - qattention_mask
         #print('*************************') 
@@ -2664,6 +2668,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         sequence_output1d = self.conv1d_2(sequence_output1d_1)
 
         sequence_output1d = sequence_output1d.permute(0,2,1).contiguous()
+        sequence_output1d = sequence_output1d[:, :384, :]    #Added for compabitility with SG output (which should be 512)
 
         #Skip connection from Bert Layer
         sequence_output1d = self.LayerNorm(sequence_output1d + sequence_output)
@@ -2731,7 +2736,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
             ignored_index = start_logits.size(1)
             start_positions.clamp_(0, ignored_index)
             end_positions.clamp_(0, ignored_index)
-            #orig_answers.clamp_(0, ignored_index)
+
 
             #print(f"orig_answers: {orig_answers.shape}")
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
