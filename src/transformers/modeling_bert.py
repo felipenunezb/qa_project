@@ -1456,7 +1456,6 @@ class BertModelS(BertPreTrainedModel):
 
         #raise SystemExit
         embedding_output = self.embeddings(input_ids, token_type_ids)
-        print(f"pre: {embedding_output.shape}")
 
         if scene_dataset:
             scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
@@ -1467,11 +1466,12 @@ class BertModelS(BertPreTrainedModel):
             #print(f"embedding_output: {embedding_output.shape}")
             #embedding_output = self.linear_scene(embedding_output.permute(0,2,1)).permute(0,2,1)
 
-        print(f"post: {embedding_output.shape}")
+        print('here')
         encoded_layers = self.encoder(embedding_output,
                                       extended_attention_mask,
                                       encoder_hidden_states=encoder_hidden_states)
         #print('*** encoded_layers is',encoded_layers.shape)
+        print('or here')
         sequence_output = encoded_layers[-1]
 
         #print('*** sequence_output is',sequence_output.shape)
