@@ -1206,7 +1206,7 @@ class BertModelE(BertPreTrainedModel):
         self.encoder = BertEncoder(config)
         self.pooler = BertPooler(config)
         self.scene_emb = LoadSceneGraph_dict(config)
-        self.linear_scene = nn.Linear(150, 128)
+        self.linear_scene = nn.Linear(384+150, 384)
 
         self.init_weights()
 
@@ -1267,12 +1267,10 @@ class BertModelE(BertPreTrainedModel):
 
         device = input_ids.device if input_ids is not None else inputs_embeds.device
 
-        input_shape = list(input_ids.size())
-        input_shape[1] = 512  #384 + 128 for scene embedding
-        #if attention_mask is None:
-        attention_mask = torch.ones(input_shape, device=device)
-        #if token_type_ids is None:
-        #token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
+        if attention_mask is None:
+            attention_mask = torch.ones(input_shape, device=device)
+        if token_type_ids is None:
+            token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
 
         # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
         # ourselves in which case we just need to make it broadcastable to all heads.
@@ -1300,18 +1298,18 @@ class BertModelE(BertPreTrainedModel):
             input_ids=input_ids, position_ids=position_ids, token_type_ids=token_type_ids, inputs_embeds=inputs_embeds
         )
     
-
         #print(f"embedding_output: {embedding_output.shape}")
         scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
-        print(f"prior scenedata: {scenedata.shape}")
+        #print(f"prior scenedata: {scenedata.shape}")
         #Only keep the first 128 objects, to avoid going beyond the 512 tokens
-        scenedata = self.linear_scene(scenedata.permute(0,2,1)).permute(0,2,1) #scenedata[:, :128, :] 
-        print(f"after scenedata: {scenedata.shape}")
+        #scenedata = self.linear_scene(scenedata.permute(0,2,1)).permute(0,2,1) #scenedata[:, :128, :] 
+        #print(f"after scenedata: {scenedata.shape}")
 
 
         #Concat regular embedding plus 128 objects scene graph embedding
-        embedding_output = torch.cat((embedding_output[:,:-1,:], scenedata, embedding_output[:,-1,:]), dim=1)
+        embedding_output = torch.cat((embedding_output, scenedata), dim=1)   #dim (batch, seq_len + 150, hidden)
         #print(f"embedding_output: {embedding_output.shape}")
+        embedding_output = self.linear_scene(embedding_output.permute(0,2,1)).permute(0,2,1)
 
         encoder_outputs = self.encoder(
             embedding_output,
