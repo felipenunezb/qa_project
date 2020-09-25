@@ -2668,10 +2668,11 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         sequence_output1d = self.conv1d_2(sequence_output1d_1)
 
         sequence_output1d = sequence_output1d.permute(0,2,1).contiguous()
-        sequence_output1d = sequence_output1d[:, :384, :]    #Added for compabitility with SG output (which should be 512)
-
+        
         #Skip connection from Bert Layer
         sequence_output1d = self.LayerNorm(sequence_output1d + sequence_output)
+        sequence_output1d = sequence_output1d[:, :384, :]   
+
 
         #print(f"sequence_output1d: {sequence_output1d.shape}")
 
