@@ -2281,13 +2281,14 @@ class LoadSceneGraph_dict(nn.Module):
                         wordEmbs[i_r] = torch.tensor((embedding[rel[0]] + embedding[rel[1]]) / 2, device=device)
                     relsEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
             
-            pre_lstm = torch.cat((objectEmbeddings.unsqueeze(1), attrEmbeddings.unsqueeze(1), relsEmbeddings.unsqueeze(1)), dim=1)
-            _, (hidden_state, _) = self.LSTM_encoder(pre_lstm)
-            imageBatch[i] = hidden_state[0]
+            #pre_lstm = torch.cat((objectEmbeddings.unsqueeze(1), attrEmbeddings.unsqueeze(1), relsEmbeddings.unsqueeze(1)), dim=1)
+            #_, (hidden_state, _) = self.LSTM_encoder(pre_lstm)
+            hidden_state = torch.cat((objectEmbeddings, attrEmbeddings, relsEmbeddings), dim=1)
+            imageBatch[i] = hidden_state#[0]
 
-        #hidden_states = self.dense(imageBatch)
-        #hidden_states = self.dropout(hidden_states)
-        return imageBatch #hidden_states
+        hidden_states = self.dense(imageBatch)
+        hidden_states = self.dropout(hidden_states)
+        return hidden_states #imageBatch
 
 
 @add_start_docstrings(
