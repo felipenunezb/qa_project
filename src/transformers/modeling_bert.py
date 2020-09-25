@@ -1466,12 +1466,11 @@ class BertModelS(BertPreTrainedModel):
             #print(f"embedding_output: {embedding_output.shape}")
             #embedding_output = self.linear_scene(embedding_output.permute(0,2,1)).permute(0,2,1)
 
-        print('here')
         encoded_layers = self.encoder(embedding_output,
                                       extended_attention_mask,
                                       encoder_hidden_states=encoder_hidden_states)
         #print('*** encoded_layers is',encoded_layers.shape)
-        print('or here')
+
         sequence_output = encoded_layers[-1]
 
         #print('*** sequence_output is',sequence_output.shape)
@@ -1482,6 +1481,178 @@ class BertModelS(BertPreTrainedModel):
         else:
             encoded_layers = encoded_layers[-4:]  #only need last 4 layers for voters
         return extended_attention_mask,cextended_attention_mask,qextended_attention_mask,sequence_output, encoded_layers#, pooled_output
+
+@add_start_docstrings(
+    "The bare Bert Model transformer outputting raw hidden-states without any specific head on top.",
+    BERT_START_DOCSTRING,
+)
+class BertModelS2(BertPreTrainedModel):
+    """
+
+    The model can behave as an encoder (with only self-attention) as well
+    as a decoder, in which case a layer of cross-attention is added between
+    the self-attention layers, following the architecture described in `Attention is all you need`_ by Ashish Vaswani,
+    Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser and Illia Polosukhin.
+
+    To behave as an decoder the model needs to be initialized with the
+    :obj:`is_decoder` argument of the configuration set to :obj:`True`.
+    To be used in a Seq2Seq model, the model needs to initialized with both :obj:`is_decoder`
+    argument and :obj:`add_cross_attention` set to :obj:`True`; an
+    :obj:`encoder_hidden_states` is then expected as an input to the forward pass.
+
+    .. _`Attention is all you need`:
+        https://arxiv.org/abs/1706.03762
+
+    """
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.config = config
+
+        self.embeddings = BertEmbeddings(config)
+        self.encoder = BertEncoder(config)
+        self.pooler = BertPooler(config)
+        self.scene_emb = LoadSceneGraph_dict(config)
+        #self.linear_scene = nn.Linear(384+150, 384)
+        self.linear_scene = nn.Linear(150, 128)
+        self.linear_out = nn.Linear(512, 384)
+
+        self.init_weights()
+
+    def get_input_embeddings(self):
+        return self.embeddings.word_embeddings
+
+    def set_input_embeddings(self, value):
+        self.embeddings.word_embeddings = value
+
+    def _prune_heads(self, heads_to_prune):
+        """ Prunes heads of the model.
+            heads_to_prune: dict of {layer_num: list of heads to prune in this layer}
+            See base class PreTrainedModel
+        """
+        for layer, heads in heads_to_prune.items():
+            self.encoder.layer[layer].attention.prune_heads(heads)
+
+    @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
+    @add_code_sample_docstrings(
+        tokenizer_class=_TOKENIZER_FOR_DOC,
+        checkpoint="bert-base-uncased",
+        output_type=BaseModelOutputWithPooling,
+        config_class=_CONFIG_FOR_DOC,
+    )
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        position_ids=None,
+        head_mask=None,
+        inputs_embeds=None,
+        encoder_hidden_states=None,
+        encoder_attention_mask=None,
+        output_attentions=None,
+        output_hidden_states=None,
+        return_dict=None,
+        titles=None,
+        scene_dataset=None, 
+        embedding=None, 
+        scene_dict=None,
+    ):
+
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        #if input_ids is not None and inputs_embeds is not None:
+        #    raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
+        #elif input_ids is not None:
+        #    input_shape = input_ids.size()
+        #elif inputs_embeds is not None:
+        #    input_shape = inputs_embeds.size()[:-1]
+        #else:
+        #    raise ValueError("You have to specify either input_ids or inputs_embeds")
+
+        device = input_ids.device if input_ids is not None else inputs_embeds.device
+
+        input_shape = list(input_ids.size())
+        input_shape[1] = 512  #384 + 128 for scene embedding
+        #if attention_mask is None:
+        attention_mask = torch.ones(input_shape, device=device)
+
+        #if attention_mask is None:
+        #    attention_mask = torch.ones(input_shape, device=device)
+        if token_type_ids is None:
+            token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
+
+        # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
+        # ourselves in which case we just need to make it broadcastable to all heads.
+        extended_attention_mask: torch.Tensor = self.get_extended_attention_mask(attention_mask, input_shape, device)
+
+        # If a 2D ou 3D attention mask is provided for the cross-attention
+        # we need to make broadcastabe to [batch_size, num_heads, seq_length, seq_length]
+        if self.config.is_decoder and encoder_hidden_states is not None:
+            encoder_batch_size, encoder_sequence_length, _ = encoder_hidden_states.size()
+            encoder_hidden_shape = (encoder_batch_size, encoder_sequence_length)
+            if encoder_attention_mask is None:
+                encoder_attention_mask = torch.ones(encoder_hidden_shape, device=device)
+            encoder_extended_attention_mask = self.invert_attention_mask(encoder_attention_mask)
+        else:
+            encoder_extended_attention_mask = None
+
+        if scene_dataset:
+            complement_shape = input_shape
+            complement_shape[1] = 128
+            token_type_ids2 = torch.cat((token_type_ids, torch.ones(complement_shape, device=device)), 1)
+        qattention_mask = attention_mask - token_type_ids2
+        cattention_mask = attention_mask - qattention_mask
+        #print('*************************') 
+        #print('cattention_mask',cattention_mask)
+        #print('qattention_mask',qattention_mask)
+      
+        cextended_attention_mask = self.get_extended_attention_mask(cattention_mask, input_shape, device)
+        qextended_attention_mask = self.get_extended_attention_mask(qattention_mask, input_shape, device)
+
+        # Prepare head mask if needed
+        # 1.0 in head_mask indicate we keep the head
+        # attention_probs has shape bsz x n_heads x N x N
+        # input head_mask has shape [num_heads] or [num_hidden_layers x num_heads]
+        # and head_mask is converted to shape [num_hidden_layers x batch x num_heads x seq_length x seq_length]
+        head_mask = self.get_head_mask(head_mask, self.config.num_hidden_layers)
+
+        embedding_output = self.embeddings(
+            input_ids=input_ids, position_ids=position_ids, token_type_ids=token_type_ids, inputs_embeds=inputs_embeds
+        )
+    
+        #print(f"embedding_output: {embedding_output.shape}")
+        scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
+        #print(f"prior scenedata: {scenedata.shape}")
+        #Only keep the first 128 objects, to avoid going beyond the 512 tokens
+        scenedata = self.linear_scene(scenedata.permute(0,2,1)).permute(0,2,1) #scenedata[:, :128, :] 
+        #print(f"after scenedata: {scenedata.shape}")
+
+
+        #Concat regular embedding plus 128 objects scene graph embedding
+        embedding_output = torch.cat((embedding_output, scenedata), dim=1)   #dim (batch, seq_len + 150, hidden)
+
+        encoder_outputs = self.encoder(
+            embedding_output,
+            attention_mask=extended_attention_mask,
+            head_mask=head_mask,
+            encoder_hidden_states=encoder_hidden_states,
+            encoder_attention_mask=encoder_extended_attention_mask,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
+        sequence_output = encoder_outputs[0]
+        #sequence_output = self.linear_out(sequence_output.permute(0,2,1)).permute(0,2,1)
+        pooled_output = self.pooler(sequence_output)
+
+        return (extended_attention_mask,cextended_attention_mask,qextended_attention_mask,sequence_output, pooled_output) + encoder_outputs[1:]
+
+        
 
 @add_start_docstrings(
     """Bert Model with two heads on top as done during the pre-training: a `masked language modeling` head and
@@ -2577,7 +2748,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         super().__init__(config)
         self.num_labels = config.num_labels
         self.num_choices = 2913
-        self.bert = BertModelS(config)
+        self.bert = BertModelS2(config)
         self.decoder = BertDirectedAttention(config)
         self.qa_outputs_start = nn.Linear(config.hidden_size, 1)
         self.qa_outputs_end = nn.Linear(config.hidden_size,1)
@@ -2633,9 +2804,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        #extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output = self.bert(input_ids, token_type_ids, attention_mask, output_hidden_states=False)
-
-        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output,encoded_layers = self.bert(
+        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output,pooled_output,hidden_states = self.bert(
                                                                                     input_ids,
                                                                                     attention_mask=attention_mask,
                                                                                     token_type_ids=token_type_ids,
