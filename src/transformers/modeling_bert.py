@@ -1383,7 +1383,7 @@ class BertModelS(BertPreTrainedModel):
     def __init__(self, config):
         super(BertModelS, self).__init__(config)
         self.embeddings = BertEmbeddings(config)
-        self.encoder = BertEncoderS(config)
+        self.encoder = BertEncoder(config)
         self.pooler = BertPooler(config)
         self.scene_emb = LoadSceneGraph_dict(config)
         self.linear_scene = nn.Linear(150, 128)
