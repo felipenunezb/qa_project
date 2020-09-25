@@ -663,7 +663,7 @@ class BertOutput(nn.Module):
         return hidden_states
 
 
-`class BertLayer`(nn.Module):
+class BertLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
