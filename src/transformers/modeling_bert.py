@@ -208,8 +208,8 @@ class BertEmbeddings(nn.Module):
 
         seq_length = input_shape[1]
 
-        print(f'cls {print ((input_ids == 101).nonzero())}')
-        print(f'sep {print ((input_ids == 102).nonzero())}')
+        #print(f'cls {print ((input_ids == 101).nonzero())}')
+        #print(f'sep {print ((input_ids == 102).nonzero())}')
 
         if position_ids is None:
             position_ids = self.position_ids[:, :seq_length]
@@ -222,10 +222,10 @@ class BertEmbeddings(nn.Module):
         position_embeddings = self.position_embeddings(position_ids)
         token_type_embeddings = self.token_type_embeddings(token_type_ids)
 
-        print(position_embeddings.shape)
-        print(f"position: {position_embeddings[0,:,:]}")
-        print(token_type_embeddings.shape)
-        print(f"type: {position_embeddings[0,:,:]}")
+        #print(position_embeddings.shape)
+        #print(f"position: {position_embeddings[0,:,:]}")
+        #print(token_type_embeddings.shape)
+        #print(f"type: {position_embeddings[0,:,:]}")
         embeddings = inputs_embeds + position_embeddings + token_type_embeddings
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
