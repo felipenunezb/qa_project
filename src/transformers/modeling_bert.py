@@ -1386,7 +1386,7 @@ class BertModelS(BertPreTrainedModel):
         self.encoder = BertEncoderS(config)
         self.pooler = BertPooler(config)
         self.scene_emb = LoadSceneGraph_dict(config)
-        self.linear_scene = nn.Linear(384+150, 384)
+        self.linear_scene = nn.Linear(150, 128)
         self.init_weights()
         #self.apply(self.init_bert_weights)
 
@@ -1408,8 +1408,14 @@ class BertModelS(BertPreTrainedModel):
         embedding=None, 
         scene_dict=None,
     ):
-        if attention_mask is None:
-            attention_mask = torch.ones_like(input_ids)
+        device = input_ids.device if input_ids is not None else inputs_embeds.device
+        input_shape = list(input_ids.size())
+        input_shape[1] = 512  #384 + 128 for scene embedding
+        #if attention_mask is None:
+        attention_mask = torch.ones(input_shape, device=device)
+
+        #if attention_mask is None:
+        #    attention_mask = torch.ones_like(input_ids)
         if token_type_ids is None:
             token_type_ids = torch.zeros_like(input_ids)
 
@@ -1449,10 +1455,12 @@ class BertModelS(BertPreTrainedModel):
 
         if scene_dataset:
             scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
+            scenedata = self.linear_scene(scenedata.permute(0,2,1)).permute(0,2,1)
+            embedding_output = torch.cat((embedding_output, scenedata), dim=1)
             #Concat regular embedding plus 128 objects scene graph embedding
-            embedding_output = torch.cat((embedding_output, scenedata), dim=1)   #dim (batch, seq_len + 150, hidden)
+            #embedding_output = torch.cat((embedding_output, scenedata), dim=1)   #dim (batch, seq_len + 150, hidden)
             #print(f"embedding_output: {embedding_output.shape}")
-            embedding_output = self.linear_scene(embedding_output.permute(0,2,1)).permute(0,2,1)
+            #embedding_output = self.linear_scene(embedding_output.permute(0,2,1)).permute(0,2,1)
 
         encoded_layers = self.encoder(embedding_output,
                                       extended_attention_mask,
@@ -2239,7 +2247,7 @@ class LoadSceneGraph_dict(nn.Module):
     def forward(self, titles, scene_dataset, embedding, sceneDict):
         device = titles.device
         titles_len = len(titles)
-        imageBatch = torch.zeros((titles_len, 150, 900), device=device)
+        imageBatch = torch.zeros((titles_len, 150, self.hidden_size), device=device)
         for i, title in enumerate(titles):
             sceneObjs = [obj["name"] for obj in scene_dataset[str(title.item())]["objects"].values()]
             sceneAttrs = [obj["attributes"] for obj in scene_dataset[str(title.item())]["objects"].values()]
@@ -2281,14 +2289,14 @@ class LoadSceneGraph_dict(nn.Module):
                         wordEmbs[i_r] = torch.tensor((embedding[rel[0]] + embedding[rel[1]]) / 2, device=device)
                     relsEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
             
-            #pre_lstm = torch.cat((objectEmbeddings.unsqueeze(1), attrEmbeddings.unsqueeze(1), relsEmbeddings.unsqueeze(1)), dim=1)
-            #_, (hidden_state, _) = self.LSTM_encoder(pre_lstm)
-            hidden_state = torch.cat((objectEmbeddings, attrEmbeddings, relsEmbeddings), dim=1)
-            imageBatch[i] = hidden_state#[0]
+            pre_lstm = torch.cat((objectEmbeddings.unsqueeze(1), attrEmbeddings.unsqueeze(1), relsEmbeddings.unsqueeze(1)), dim=1)
+            _, (hidden_state, _) = self.LSTM_encoder(pre_lstm)
+            #hidden_state = torch.cat((objectEmbeddings, attrEmbeddings, relsEmbeddings), dim=1)
+            imageBatch[i] = hidden_state[0]
 
-        hidden_states = self.dense(imageBatch)
-        hidden_states = self.dropout(hidden_states)
-        return hidden_states #imageBatch
+        #hidden_states = self.dense(imageBatch)
+        #hidden_states = self.dropout(hidden_states)
+        return imageBatch #hidden_states #
 
 
 @add_start_docstrings(
