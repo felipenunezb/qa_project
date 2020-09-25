@@ -1377,6 +1377,8 @@ class BertModelS(BertPreTrainedModel):
         self.embeddings = BertEmbeddings(config)
         self.encoder = BertEncoderS(config)
         self.pooler = BertPooler(config)
+        self.scene_emb = LoadSceneGraph_dict(config)
+        self.linear_scene = nn.Linear(384+150, 384)
         self.init_weights()
         #self.apply(self.init_bert_weights)
 
@@ -1393,6 +1395,10 @@ class BertModelS(BertPreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        titles=None,
+        scene_dataset=None, 
+        embedding=None, 
+        scene_dict=None,
     ):
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)
@@ -1432,6 +1438,14 @@ class BertModelS(BertPreTrainedModel):
 
         #raise SystemExit
         embedding_output = self.embeddings(input_ids, token_type_ids)
+
+        if scene_dataset:
+            scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
+            #Concat regular embedding plus 128 objects scene graph embedding
+            embedding_output = torch.cat((embedding_output, scenedata), dim=1)   #dim (batch, seq_len + 150, hidden)
+            #print(f"embedding_output: {embedding_output.shape}")
+            embedding_output = self.linear_scene(embedding_output.permute(0,2,1)).permute(0,2,1)
+
         encoded_layers = self.encoder(embedding_output,
                                       extended_attention_mask,
                                       encoder_hidden_states=encoder_hidden_states)
@@ -1440,10 +1454,12 @@ class BertModelS(BertPreTrainedModel):
 
         #print('*** sequence_output is',sequence_output.shape)
 
-        pooled_output = self.pooler(sequence_output)
+        #pooled_output = self.pooler(sequence_output)
         if not encoder_hidden_states:
             encoded_layers = encoded_layers[-1]
-        return extended_attention_mask,cextended_attention_mask,qextended_attention_mask,sequence_output#encoded_layers, pooled_output
+        else:
+            encoded_layers = encoded_layers[-4:]  #only need last 4 layers for voters
+        return extended_attention_mask,cextended_attention_mask,qextended_attention_mask,sequence_output, encoded_layers#, pooled_output
 
 @add_start_docstrings(
     """Bert Model with two heads on top as done during the pre-training: a `masked language modeling` head and
@@ -2596,7 +2612,7 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
 
         #extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output = self.bert(input_ids, token_type_ids, attention_mask, output_hidden_states=False)
 
-        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output = self.bert(
+        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output,encoded_layers = self.bert(
                                                                                     input_ids,
                                                                                     attention_mask=attention_mask,
                                                                                     token_type_ids=token_type_ids,
@@ -2604,8 +2620,12 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
                                                                                     head_mask=head_mask,
                                                                                     inputs_embeds=inputs_embeds,
                                                                                     output_attentions=output_attentions,
-                                                                                    output_hidden_states=False, #output_hidden_states,
+                                                                                    output_hidden_states=True, #output_hidden_states,
                                                                                     return_dict=return_dict,
+                                                                                    titles=titles,
+                                                                                    scene_dataset=scene_dataset,
+                                                                                    scene_dict=scene_dict,
+                                                                                    embedding=embedding,
                                                                                 )
 
         cdeencoded_layers,qdeencoded_layers = self.decoder(sequence_output, #2d --> 1d translated
@@ -2671,11 +2691,12 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
 
         sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4), dim=1)
         '''
-        voter_1 = torch.mean(sequence_output1d, dim=1) 
-        voter_2 = torch.mean(encoded_skip_start[-1], dim=1) 
-        voter_3 = torch.mean(seq_end, dim=1) 
+        voter_1 = torch.mean(encoded_layers[-1], dim=1) 
+        voter_2 = torch.mean(encoded_layers[-2], dim=1) 
+        voter_3 = torch.mean(encoded_layers[-3], dim=1) 
+        voter_4 = torch.mean(encoded_layers[-4], dim=1) 
 
-        sequence_mean = torch.cat((voter_1, voter_2, voter_3), dim=1)
+        sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4), dim=1)
 
         orig_ans_log = self.orig_ans_choice(sequence_mean)
         #print(f"orig_ans_log: {orig_ans_log.shape}")
