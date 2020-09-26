@@ -3030,8 +3030,8 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
         #Start and End Self Attention for span prediction
         encoded_skip_start=self.skip_encoder_start(sequence_output1d,extended_attention_mask,output_hidden_states=False)
         encoded_skip_end=self.skip_encoder_end(sequence_output1d,extended_attention_mask,output_hidden_states=False)
-        print(f"encoded_skip_start {encoded_skip_start.shape}")
-        print(f"encoded_skip_end {encoded_skip_end.shape}")
+        print(f"encoded_skip_start {encoded_skip_start[-1].shape}")
+        print(f"encoded_skip_end {encoded_skip_end[-1].shape}")
         for_end = torch.cat((encoded_skip_end[-1],encoded_skip_start[-1]),-1)
 
         seq_end,_  = self.endLSTM(for_end)
