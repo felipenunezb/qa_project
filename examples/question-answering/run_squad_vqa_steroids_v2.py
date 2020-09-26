@@ -34,7 +34,7 @@ from transformers import (
     WEIGHTS_NAME,
     AdamW,
     AutoConfig,
-    AutoModelForQuestionAnsweringSteroids as AutoModelForQuestionAnswering,
+    AutoModelForQuestionAnsweringSteroidsSG as AutoModelForQuestionAnswering,
     AutoTokenizer,
     get_linear_schedule_with_warmup,
     squad_convert_examples_to_features,
