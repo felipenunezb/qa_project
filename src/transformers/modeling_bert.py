@@ -2979,6 +2979,10 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
                                                                                     output_attentions=output_attentions,
                                                                                     output_hidden_states=True, #output_hidden_states,
                                                                                     return_dict=return_dict,
+                                                                                    titles=titles,
+                                                                                    scene_dataset=scene_dataset, 
+                                                                                    embedding=embedding, 
+                                                                                    scene_dict=scene_dict,
                                                                                 )
 
         cdeencoded_layers,qdeencoded_layers = self.decoder(sequence_output, #2d --> 1d translated
