@@ -1383,10 +1383,8 @@ class BertModelS(BertPreTrainedModel):
     def __init__(self, config):
         super(BertModelS, self).__init__(config)
         self.embeddings = BertEmbeddings(config)
-        self.encoder = BertEncoder(config)
+        self.encoder = BertEncoderS(config)
         self.pooler = BertPooler(config)
-        self.scene_emb = LoadSceneGraph_dict(config)
-        self.linear_scene = nn.Linear(150, 128)
         self.init_weights()
         #self.apply(self.init_bert_weights)
 
@@ -1403,19 +1401,9 @@ class BertModelS(BertPreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
-        titles=None,
-        scene_dataset=None, 
-        embedding=None, 
-        scene_dict=None,
     ):
-        device = input_ids.device if input_ids is not None else inputs_embeds.device
-        input_shape = list(input_ids.size())
-        input_shape[1] = 512  #384 + 128 for scene embedding
-        #if attention_mask is None:
-        attention_mask = torch.ones(input_shape, device=device)
-
-        #if attention_mask is None:
-        #    attention_mask = torch.ones_like(input_ids)
+        if attention_mask is None:
+            attention_mask = torch.ones_like(input_ids)
         if token_type_ids is None:
             token_type_ids = torch.zeros_like(input_ids)
 
@@ -1436,11 +1424,7 @@ class BertModelS(BertPreTrainedModel):
         #print('extended_attention_mask',extended_attention_mask)
         #print('attention_mask',attention_mask)
         #print('token_type_ids',token_type_ids)
-        if scene_dataset:
-            complement_shape = input_shape
-            complement_shape[1] = 128
-            token_type_ids2 = torch.cat((token_type_ids, torch.ones(complement_shape, device=device)), 1)
-        qattention_mask = attention_mask - token_type_ids2
+        qattention_mask = attention_mask - token_type_ids
         cattention_mask = attention_mask - qattention_mask
         #print('*************************') 
         #print('cattention_mask',cattention_mask)
@@ -1456,31 +1440,18 @@ class BertModelS(BertPreTrainedModel):
 
         #raise SystemExit
         embedding_output = self.embeddings(input_ids, token_type_ids)
-
-        if scene_dataset:
-            scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
-            scenedata = self.linear_scene(scenedata.permute(0,2,1)).permute(0,2,1)
-            embedding_output = torch.cat((embedding_output, scenedata), dim=1)
-            #Concat regular embedding plus 128 objects scene graph embedding
-            #embedding_output = torch.cat((embedding_output, scenedata), dim=1)   #dim (batch, seq_len + 150, hidden)
-            #print(f"embedding_output: {embedding_output.shape}")
-            #embedding_output = self.linear_scene(embedding_output.permute(0,2,1)).permute(0,2,1)
-
         encoded_layers = self.encoder(embedding_output,
                                       extended_attention_mask,
                                       encoder_hidden_states=encoder_hidden_states)
         #print('*** encoded_layers is',encoded_layers.shape)
-
         sequence_output = encoded_layers[-1]
 
         #print('*** sequence_output is',sequence_output.shape)
 
-        #pooled_output = self.pooler(sequence_output)
+        pooled_output = self.pooler(sequence_output)
         if not encoder_hidden_states:
             encoded_layers = encoded_layers[-1]
-        else:
-            encoded_layers = encoded_layers[-4:]  #only need last 4 layers for voters
-        return extended_attention_mask,cextended_attention_mask,qextended_attention_mask,sequence_output, encoded_layers#, pooled_output
+        return extended_attention_mask,cextended_attention_mask,qextended_attention_mask,sequence_output#encoded_layers, pooled_output
 
 @add_start_docstrings(
     "The bare Bert Model transformer outputting raw hidden-states without any specific head on top.",
@@ -2748,209 +2719,11 @@ class BertForQuestionAnsweringSteroids(BertPreTrainedModel):
         super().__init__(config)
         self.num_labels = config.num_labels
         self.num_choices = 2913
-        self.bert = BertModelS2(config)
-        self.decoder = BertDirectedAttention(config)
-        self.qa_outputs_start = nn.Linear(config.hidden_size, 1)
-        self.qa_outputs_end = nn.Linear(config.hidden_size,1)
-        self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(3*config.hidden_size, self.num_choices))
-
-        self.conv1d_1 = nn.Conv1d(in_channels=2*config.hidden_size,out_channels=3*config.hidden_size//2,kernel_size=3,padding=1)
-        self.conv1d_2 = nn.Conv1d(in_channels=3*config.hidden_size//2,out_channels=config.hidden_size,kernel_size=3,padding=1)
-
-        self.LayerNorm = BertLayerNorm(config.hidden_size, eps=1e-12)
-        self.endLSTM = nn.LSTM(2*config.hidden_size,config.hidden_size,num_layers=1,batch_first=True,dropout=0.1,bidirectional=False)
-
-        self.skip_encoder_start = BertSkipEncoder(config)
-        self.skip_encoder_end = BertSkipEncoder(config)
-
-        self.init_weights()
-
-    @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
-    @add_code_sample_docstrings(
-        tokenizer_class=_TOKENIZER_FOR_DOC,
-        checkpoint="bert-base-uncased",
-        output_type=QuestionAnsweringModelOutput,
-        config_class=_CONFIG_FOR_DOC,
-    )
-    def forward(
-        self,
-        input_ids=None,
-        attention_mask=None,
-        token_type_ids=None,
-        position_ids=None,
-        head_mask=None,
-        inputs_embeds=None,
-        start_positions=None,
-        end_positions=None,
-        is_impossibles=None,
-        orig_answers=None,
-        titles=None,
-        output_attentions=None,
-        output_hidden_states=None,
-        return_dict=None,
-        scene_dataset=None,
-        scene_dict=None,
-        embedding=None,
-    ):
-        r"""
-        start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
-            Labels for position (index) of the start of the labelled span for computing the token classification loss.
-            Positions are clamped to the length of the sequence (`sequence_length`).
-            Position outside of the sequence are not taken into account for computing the loss.
-        end_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
-            Labels for position (index) of the end of the labelled span for computing the token classification loss.
-            Positions are clamped to the length of the sequence (`sequence_length`).
-            Position outside of the sequence are not taken into account for computing the loss.
-        """
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output,pooled_output,hidden_states = self.bert(
-                                                                                    input_ids,
-                                                                                    attention_mask=attention_mask,
-                                                                                    token_type_ids=token_type_ids,
-                                                                                    position_ids=position_ids,
-                                                                                    head_mask=head_mask,
-                                                                                    inputs_embeds=inputs_embeds,
-                                                                                    output_attentions=output_attentions,
-                                                                                    output_hidden_states=True, #output_hidden_states,
-                                                                                    return_dict=return_dict,
-                                                                                    titles=titles,
-                                                                                    scene_dataset=scene_dataset,
-                                                                                    scene_dict=scene_dict,
-                                                                                    embedding=embedding,
-                                                                                )
-
-        cdeencoded_layers,qdeencoded_layers = self.decoder(sequence_output, #2d --> 1d translated
-                                      c_attention_mask,q_attention_mask,
-                                      output_all_deencoded_layers=False)
-
-        #Pick final C2Q and Q2C embedding vectors for the batch
-        cdeencoded_layers = cdeencoded_layers[-1]
-        qdeencoded_layers = qdeencoded_layers[-1]
-
-        cdeencoded_layers = cdeencoded_layers.unsqueeze(-1)
-        qdeencoded_layers = qdeencoded_layers.unsqueeze(-1)
-        enc_cat = torch.cat((cdeencoded_layers,qdeencoded_layers), dim=-1)
-
-        encshape = enc_cat.shape
-        enc_cat = enc_cat.reshape(encshape[0],encshape[1],-1).contiguous()
-        enc_cat = enc_cat.permute(0,2,1).contiguous()
-        sequence_output1d_1 = self.conv1d_1(enc_cat)
-        sequence_output1d = self.conv1d_2(sequence_output1d_1)
-
-        sequence_output1d = sequence_output1d.permute(0,2,1).contiguous()
-        
-        #Skip connection from Bert Layer
-        sequence_output1d = self.LayerNorm(sequence_output1d + sequence_output)
-        sequence_output1d = sequence_output1d[:, :384, :]   
-
-
-        #print(f"sequence_output1d: {sequence_output1d.shape}")
-
-        #Flatten LSTM parameters for memory optimization
-        self.endLSTM.flatten_parameters()
-
-        #Start and End Self Attention for span prediction
-        encoded_skip_start=self.skip_encoder_start(sequence_output1d,extended_attention_mask,output_hidden_states=False)
-        encoded_skip_end=self.skip_encoder_end(sequence_output1d,extended_attention_mask,output_hidden_states=False)
-        for_end = torch.cat((encoded_skip_end[-1],encoded_skip_start[-1]),-1)
-
-        seq_end,_  = self.endLSTM(for_end)
-        start_logits = self.qa_outputs_start(encoded_skip_start[-1])
-        end_logits = self.qa_outputs_end(seq_end)
-
-        #print(f"encoded_skip_start: {encoded_skip_start[-1].shape}")
-        #print(f"seq_end: {seq_end.shape}")
-
-        #Logits!
-        start_logits = start_logits.squeeze(-1)
-        end_logits = end_logits.squeeze(-1)
-
-        '''
-        logits = self.qa_outputs(sequence_output)
-        start_logits, end_logits = logits.split(1, dim=-1)
-        start_logits = start_logits.squeeze(-1)
-        end_logits = end_logits.squeeze(-1)
-        '''
-
-        '''
-        #mean of second to last layer of hidden states
-        voter_1 = torch.mean(outputs[2][-2], dim=1) 
-        #mean of last layer of hidden states
-        voter_2 = torch.mean(outputs[2][-1], dim=1)
-        #mean of both voters
-        voter_3 = torch.mean(torch.stack([voter_1, voter_2]), dim=0)
-        #max of both voters
-        voter_4 = torch.max(voter_1, voter_2)
-
-        sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4), dim=1)
-        '''
-        voter_1 = torch.mean(encoded_layers[-1], dim=1) 
-        voter_2 = torch.mean(encoded_layers[-2], dim=1) 
-        voter_3 = torch.mean(encoded_layers[-3], dim=1) 
-        voter_4 = torch.mean(encoded_layers[-4], dim=1) 
-
-        sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4), dim=1)
-
-        orig_ans_log = self.orig_ans_choice(sequence_mean)
-        #print(f"orig_ans_log: {orig_ans_log.shape}")
-
-        total_loss = None
-        if start_positions is not None and end_positions is not None:
-            # If we are on multi-GPU, split add a dimension
-            if len(start_positions.size()) > 1:
-                start_positions = start_positions.squeeze(-1)
-            if len(end_positions.size()) > 1:
-                end_positions = end_positions.squeeze(-1)
-            if len(orig_answers.size()) > 1:
-                orig_answers = orig_answers.squeeze(-1)
-            # sometimes the start/end positions are outside our model inputs, we ignore these terms
-            ignored_index = start_logits.size(1)
-            start_positions.clamp_(0, ignored_index)
-            end_positions.clamp_(0, ignored_index)
-
-
-            #print(f"orig_answers: {orig_answers.shape}")
-            loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
-            start_loss = loss_fct(start_logits, start_positions)
-            end_loss = loss_fct(end_logits, end_positions)
-            loss_fct_c = CrossEntropyLoss()
-            choice_loss = loss_fct_c(orig_ans_log, orig_answers)
-            total_loss = (start_loss + end_loss + choice_loss) / 3
-
-        if not return_dict:
-            output = (start_logits, end_logits, orig_ans_log) #+ outputs[2:]
-            return ((total_loss,) + output) if total_loss is not None else output
-
-        return QuestionAnsweringModelOutput(
-            loss=total_loss,
-            start_logits=start_logits,
-            end_logits=end_logits,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )
-
-
-
-@add_start_docstrings(
-    """Bert Model with a span classification head on top for extractive question-answering tasks like SQuAD (a linear
-    layers on top of the hidden-states output to compute `span start logits` and `span end logits`). """,
-    BERT_START_DOCSTRING,
-)
-class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
-    def __init__(self, config):
-        super().__init__(config)
-        self.num_labels = config.num_labels
-        self.num_choices = 2913
         self.bert = BertModelS(config)
         self.decoder = BertDirectedAttention(config)
-        self.hidden_size = config.hidden_size
         self.qa_outputs_start = nn.Linear(config.hidden_size, 1)
         self.qa_outputs_end = nn.Linear(config.hidden_size,1)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(3*config.hidden_size, self.num_choices))
-
-        self.scene_emb = LoadSceneGraph_dict(config)
-        self.conv_linear = nn.Linear(384+150, 384)
 
         self.conv1d_1 = nn.Conv1d(in_channels=2*config.hidden_size,out_channels=3*config.hidden_size//2,kernel_size=3,padding=1)
         self.conv1d_2 = nn.Conv1d(in_channels=3*config.hidden_size//2,out_channels=config.hidden_size,kernel_size=3,padding=1)
@@ -3024,14 +2797,210 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
         cdeencoded_layers = cdeencoded_layers[-1]
         qdeencoded_layers = qdeencoded_layers[-1]
 
-        scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
-        cdeencoded_layers_sg = torch.cat((cdeencoded_layers, scenedata), dim=1)
-        qdeencoded_layers_sg = torch.cat((qdeencoded_layers, scenedata), dim=1)
+        cdeencoded_layers = cdeencoded_layers.unsqueeze(-1)
+        qdeencoded_layers = qdeencoded_layers.unsqueeze(-1)
+        enc_cat = torch.cat((cdeencoded_layers,qdeencoded_layers), dim=-1)
+
+        encshape = enc_cat.shape
+        enc_cat = enc_cat.reshape(encshape[0],encshape[1],-1).contiguous()
+        enc_cat = enc_cat.permute(0,2,1).contiguous()
+        sequence_output1d_1 = self.conv1d_1(enc_cat)
+        sequence_output1d = self.conv1d_2(sequence_output1d_1)
+
+        sequence_output1d = sequence_output1d.permute(0,2,1).contiguous()
+
+        #Skip connection from Bert Layer
+        sequence_output1d = self.LayerNorm(sequence_output1d + sequence_output)
+
+        #print(f"sequence_output1d: {sequence_output1d.shape}")
+
+        #Flatten LSTM parameters for memory optimization
+        self.endLSTM.flatten_parameters()
+
+        #Start and End Self Attention for span prediction
+        encoded_skip_start=self.skip_encoder_start(sequence_output1d,extended_attention_mask,output_hidden_states=False)
+        encoded_skip_end=self.skip_encoder_end(sequence_output1d,extended_attention_mask,output_hidden_states=False)
+        for_end = torch.cat((encoded_skip_end[-1],encoded_skip_start[-1]),-1)
+
+        seq_end,_  = self.endLSTM(for_end)
+        start_logits = self.qa_outputs_start(encoded_skip_start[-1])
+        end_logits = self.qa_outputs_end(seq_end)
+
+        #print(f"encoded_skip_start: {encoded_skip_start[-1].shape}")
+        #print(f"seq_end: {seq_end.shape}")
+
+        #Logits!
+        start_logits = start_logits.squeeze(-1)
+        end_logits = end_logits.squeeze(-1)
+
+        '''
+        logits = self.qa_outputs(sequence_output)
+        start_logits, end_logits = logits.split(1, dim=-1)
+        start_logits = start_logits.squeeze(-1)
+        end_logits = end_logits.squeeze(-1)
+        '''
+
+        '''
+        #mean of second to last layer of hidden states
+        voter_1 = torch.mean(outputs[2][-2], dim=1) 
+        #mean of last layer of hidden states
+        voter_2 = torch.mean(outputs[2][-1], dim=1)
+        #mean of both voters
+        voter_3 = torch.mean(torch.stack([voter_1, voter_2]), dim=0)
+        #max of both voters
+        voter_4 = torch.max(voter_1, voter_2)
+        sequence_mean = torch.cat((voter_1, voter_2, voter_3, voter_4), dim=1)
+        '''
+        voter_1 = torch.mean(sequence_output1d, dim=1) 
+        voter_2 = torch.mean(encoded_skip_start[-1], dim=1) 
+        voter_3 = torch.mean(seq_end, dim=1) 
+
+        sequence_mean = torch.cat((voter_1, voter_2, voter_3), dim=1)
+
+        orig_ans_log = self.orig_ans_choice(sequence_mean)
+        #print(f"orig_ans_log: {orig_ans_log.shape}")
+
+        total_loss = None
+        if start_positions is not None and end_positions is not None:
+            # If we are on multi-GPU, split add a dimension
+            if len(start_positions.size()) > 1:
+                start_positions = start_positions.squeeze(-1)
+            if len(end_positions.size()) > 1:
+                end_positions = end_positions.squeeze(-1)
+            if len(orig_answers.size()) > 1:
+                orig_answers = orig_answers.squeeze(-1)
+            # sometimes the start/end positions are outside our model inputs, we ignore these terms
+            ignored_index = start_logits.size(1)
+            start_positions.clamp_(0, ignored_index)
+            end_positions.clamp_(0, ignored_index)
+            #orig_answers.clamp_(0, ignored_index)
+
+            #print(f"orig_answers: {orig_answers.shape}")
+            loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
+            start_loss = loss_fct(start_logits, start_positions)
+            end_loss = loss_fct(end_logits, end_positions)
+            loss_fct_c = CrossEntropyLoss()
+            choice_loss = loss_fct_c(orig_ans_log, orig_answers)
+            total_loss = (start_loss + end_loss + choice_loss) / 3
+
+        if not return_dict:
+            output = (start_logits, end_logits, orig_ans_log) #+ outputs[2:]
+            return ((total_loss,) + output) if total_loss is not None else output
+
+        return QuestionAnsweringModelOutput(
+            loss=total_loss,
+            start_logits=start_logits,
+            end_logits=end_logits,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
+
+
+
+@add_start_docstrings(
+    """Bert Model with a span classification head on top for extractive question-answering tasks like SQuAD (a linear
+    layers on top of the hidden-states output to compute `span start logits` and `span end logits`). """,
+    BERT_START_DOCSTRING,
+)
+class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.num_labels = config.num_labels
+        self.num_choices = 2913
+        self.bert = BertModelS2(config)
+        self.decoder = BertDirectedAttention(config)
+        self.hidden_size = config.hidden_size
+        self.qa_outputs_start = nn.Linear(config.hidden_size, 1)
+        self.qa_outputs_end = nn.Linear(config.hidden_size,1)
+        self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(3*config.hidden_size, self.num_choices))
+
+        self.scene_emb = LoadSceneGraph_dict(config)
+        self.conv_linear = nn.Linear(384+150, 384)
+
+        self.conv1d_1 = nn.Conv1d(in_channels=2*config.hidden_size,out_channels=3*config.hidden_size//2,kernel_size=3,padding=1)
+        self.conv1d_2 = nn.Conv1d(in_channels=3*config.hidden_size//2,out_channels=config.hidden_size,kernel_size=3,padding=1)
+
+        self.LayerNorm = BertLayerNorm(config.hidden_size, eps=1e-12)
+        self.endLSTM = nn.LSTM(2*config.hidden_size,config.hidden_size,num_layers=1,batch_first=True,dropout=0.1,bidirectional=False)
+
+        self.skip_encoder_start = BertSkipEncoder(config)
+        self.skip_encoder_end = BertSkipEncoder(config)
+
+        self.init_weights()
+
+    @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
+    @add_code_sample_docstrings(
+        tokenizer_class=_TOKENIZER_FOR_DOC,
+        checkpoint="bert-base-uncased",
+        output_type=QuestionAnsweringModelOutput,
+        config_class=_CONFIG_FOR_DOC,
+    )
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        position_ids=None,
+        head_mask=None,
+        inputs_embeds=None,
+        start_positions=None,
+        end_positions=None,
+        is_impossibles=None,
+        orig_answers=None,
+        titles=None,
+        output_attentions=None,
+        output_hidden_states=None,
+        return_dict=None,
+        scene_dataset=None,
+        scene_dict=None,
+        embedding=None,
+    ):
+        r"""
+        start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
+            Labels for position (index) of the start of the labelled span for computing the token classification loss.
+            Positions are clamped to the length of the sequence (`sequence_length`).
+            Position outside of the sequence are not taken into account for computing the loss.
+        end_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
+            Labels for position (index) of the end of the labelled span for computing the token classification loss.
+            Positions are clamped to the length of the sequence (`sequence_length`).
+            Position outside of the sequence are not taken into account for computing the loss.
+        """
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        #extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output = self.bert(input_ids, token_type_ids, attention_mask, output_hidden_states=False)
+        
+        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output,pooled_output,hidden_states = self.bert(
+                                                                                    input_ids,
+                                                                                    attention_mask=attention_mask,
+                                                                                    token_type_ids=token_type_ids,
+                                                                                    position_ids=position_ids,
+                                                                                    head_mask=head_mask,
+                                                                                    inputs_embeds=inputs_embeds,
+                                                                                    output_attentions=output_attentions,
+                                                                                    output_hidden_states=True, #output_hidden_states,
+                                                                                    return_dict=return_dict,
+                                                                                )
+
+        cdeencoded_layers,qdeencoded_layers = self.decoder(sequence_output, #2d --> 1d translated
+                                      c_attention_mask,q_attention_mask,
+                                      output_all_deencoded_layers=False)
+
+        #Pick final C2Q and Q2C embedding vectors for the batch
+        cdeencoded_layers = cdeencoded_layers[-1]
+        qdeencoded_layers = qdeencoded_layers[-1]
+
+        #scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
+        #cdeencoded_layers_sg = torch.cat((cdeencoded_layers, scenedata), dim=1)
+        #qdeencoded_layers_sg = torch.cat((qdeencoded_layers, scenedata), dim=1)
         #print(f"qdeencoded_layers_sg: {qdeencoded_layers_sg.shape}")
 
-        cdeencoded_layers_sg = cdeencoded_layers_sg.unsqueeze(-1)
-        qdeencoded_layers_sg = qdeencoded_layers_sg.unsqueeze(-1)
-        enc_cat = torch.cat((cdeencoded_layers_sg,qdeencoded_layers_sg), dim=-1)
+        cdeencoded_layers = cdeencoded_layers.unsqueeze(-1)
+        qdeencoded_layers = qdeencoded_layers.unsqueeze(-1)
+        enc_cat = torch.cat((cdeencoded_layers,qdeencoded_layers), dim=-1)
+
+        #cdeencoded_layers_sg = cdeencoded_layers_sg.unsqueeze(-1)
+        #qdeencoded_layers_sg = qdeencoded_layers_sg.unsqueeze(-1)
+        #enc_cat = torch.cat((cdeencoded_layers_sg,qdeencoded_layers_sg), dim=-1)
         #print(f"enc_cat: {enc_cat.shape}")
 
         encshape = enc_cat.shape
@@ -3057,6 +3026,8 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
         #Start and End Self Attention for span prediction
         encoded_skip_start=self.skip_encoder_start(sequence_output1d,extended_attention_mask,output_hidden_states=False)
         encoded_skip_end=self.skip_encoder_end(sequence_output1d,extended_attention_mask,output_hidden_states=False)
+        print(f"encoded_skip_start {encoded_skip_start.shape}")
+        print(f"encoded_skip_end {encoded_skip_end.shape}")
         for_end = torch.cat((encoded_skip_end[-1],encoded_skip_start[-1]),-1)
 
         seq_end,_  = self.endLSTM(for_end)
