@@ -105,7 +105,7 @@ from .modeling_electra import (
     ElectraForQuestionAnsweringVQA,
     ElectraForQuestionAnsweringVQAPool,
     ElectraForQuestionAnsweringVQAPool_MultiVote,
-    ElectraForQuestionAnsweringSteroidsSG
+    ElectraForQuestionAnsweringSteroidsSG,
     ElectraForSequenceClassification,
     ElectraForTokenClassification,
     ElectraModel,
