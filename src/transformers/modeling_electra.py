@@ -492,8 +492,8 @@ class ElectraModelS2(ElectraPreTrainedModel):
         embedding_output = torch.cat((embedding_output, scenedata), dim=1)   #dim (batch, seq_len + 150, hidden)
 
 
-        hidden_states = self.encoder(
-            hidden_states,
+        encoder_outputs = self.encoder(
+            embedding_output,
             attention_mask=extended_attention_mask,
             head_mask=head_mask,
             output_attentions=output_attentions,
