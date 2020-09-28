@@ -17,7 +17,7 @@ from .file_utils import (
     add_start_docstrings_to_callable,
     replace_return_docstrings,
 )
-from .modeling_bert import BertEmbeddings, BertEncoder, BertLayerNorm, BertPreTrainedModel
+from .modeling_bert import BertEmbeddings, BertEncoder, BertLayerNorm, BertPreTrainedModel, BertDirectedAttention, BertSkipEncoder
 from .modeling_outputs import (
     BaseModelOutput,
     MaskedLMOutput,
@@ -379,6 +379,130 @@ class ElectraModel(ElectraPreTrainedModel):
 
         return hidden_states
 
+@add_start_docstrings(
+    "The bare Electra Model transformer outputting raw hidden-states without any specific head on top. Identical to "
+    "the BERT model except that it uses an additional linear layer between the embedding layer and the encoder if the "
+    "hidden size and embedding size are different."
+    ""
+    "Both the generator and discriminator checkpoints may be loaded into this model.",
+    ELECTRA_START_DOCSTRING,
+)
+class ElectraModelS2(ElectraPreTrainedModel):
+
+    config_class = ElectraConfig
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.embeddings = ElectraEmbeddings(config)
+
+        if config.embedding_size != config.hidden_size:
+            self.embeddings_project = nn.Linear(config.embedding_size, config.hidden_size)
+
+        self.encoder = BertEncoder(config)
+        self.scene_emb = LoadSceneGraph_dict(config)
+        self.linear_scene = nn.Linear(150, 128)
+        self.config = config
+        self.init_weights()
+
+    def get_input_embeddings(self):
+        return self.embeddings.word_embeddings
+
+    def set_input_embeddings(self, value):
+        self.embeddings.word_embeddings = value
+
+    def _prune_heads(self, heads_to_prune):
+        """ Prunes heads of the model.
+            heads_to_prune: dict of {layer_num: list of heads to prune in this layer}
+            See base class PreTrainedModel
+        """
+        for layer, heads in heads_to_prune.items():
+            self.encoder.layer[layer].attention.prune_heads(heads)
+
+    @add_start_docstrings_to_callable(ELECTRA_INPUTS_DOCSTRING)
+    @add_code_sample_docstrings(
+        tokenizer_class=_TOKENIZER_FOR_DOC,
+        checkpoint="google/electra-small-discriminator",
+        output_type=BaseModelOutput,
+        config_class=_CONFIG_FOR_DOC,
+    )
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        position_ids=None,
+        head_mask=None,
+        inputs_embeds=None,
+        output_attentions=None,
+        output_hidden_states=None,
+        return_dict=None,
+        titles=None,
+        scene_dataset=None, 
+        embedding=None, 
+        scene_dict=None,
+    ):
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        #if input_ids is not None and inputs_embeds is not None:
+        #    raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
+        #elif input_ids is not None:
+        #    input_shape = input_ids.size()
+        #elif inputs_embeds is not None:
+        #    input_shape = inputs_embeds.size()[:-1]
+        #else:
+        #    raise ValueError("You have to specify either input_ids or inputs_embeds")
+
+        device = input_ids.device if input_ids is not None else inputs_embeds.device
+
+        input_shape = list(input_ids.size())
+        input_shape[1] = 512  #384 + 128 for scene embedding
+        #if attention_mask is None:
+        attention_mask = torch.ones(input_shape, device=device)
+
+        #if attention_mask is None:
+        #    attention_mask = torch.ones(input_shape, device=device)
+        if token_type_ids is None:
+            token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
+
+        extended_attention_mask = self.get_extended_attention_mask(attention_mask, input_shape, device)
+        head_mask = self.get_head_mask(head_mask, self.config.num_hidden_layers)
+
+        if scene_dataset:
+            complement_shape = input_shape
+            complement_shape[1] = 128
+            token_type_ids2 = torch.cat((token_type_ids, torch.ones(complement_shape, device=device)), 1)
+        qattention_mask = attention_mask - token_type_ids2
+        cattention_mask = attention_mask - qattention_mask
+
+        cextended_attention_mask = self.get_extended_attention_mask(cattention_mask, input_shape, device)
+        qextended_attention_mask = self.get_extended_attention_mask(qattention_mask, input_shape, device)
+
+        embedding_output = self.embeddings(
+            input_ids=input_ids, position_ids=position_ids, token_type_ids=token_type_ids, inputs_embeds=inputs_embeds
+        )
+        
+        scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
+        scenedata = self.linear_scene(scenedata.permute(0,2,1)).permute(0,2,1) #scenedata[:, :128, :] 
+
+        #Concat regular embedding plus 128 objects scene graph embedding
+        embedding_output = torch.cat((embedding_output, scenedata), dim=1)   #dim (batch, seq_len + 150, hidden)
+
+
+        hidden_states = self.encoder(
+            hidden_states,
+            attention_mask=extended_attention_mask,
+            head_mask=head_mask,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
+        sequence_output = encoder_outputs[0]
+
+        return (extended_attention_mask,cextended_attention_mask,qextended_attention_mask,sequence_output)
 
 class ElectraClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
@@ -746,6 +870,67 @@ class ElectraForTokenClassification(ElectraPreTrainedModel):
             attentions=discriminator_hidden_states.attentions,
         )
 
+class LoadSceneGraph_dict(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.dense = nn.Linear(900, config.hidden_size)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.LSTM_encoder = nn.LSTM(300,config.hidden_size,num_layers=1,batch_first=True,dropout=0.1,bidirectional=False)
+        self.hidden_size = config.hidden_size
+
+    def forward(self, titles, scene_dataset, embedding, sceneDict):
+        device = titles.device
+        titles_len = len(titles)
+        imageBatch = torch.zeros((titles_len, 150, self.hidden_size), device=device)
+        for i, title in enumerate(titles):
+            sceneObjs = [obj["name"] for obj in scene_dataset[str(title.item())]["objects"].values()]
+            sceneAttrs = [obj["attributes"] for obj in scene_dataset[str(title.item())]["objects"].values()]
+            sceneRels = []
+            for obj in scene_dataset[str(title.item())]["objects"].values():
+                relations = []
+                for rel in obj["relations"]:
+                    relations.append((rel["name"], scene_dataset[str(title.item())]["objects"][rel["object"]]["name"]))
+                sceneRels.append(relations)
+
+            encodedObjName = sceneDict.encodeSeq(sceneObjs)
+            encodedAttrs = []
+            for attr in sceneAttrs:
+                encodedAttrs.append(sceneDict.encodeSeq(attr))
+            encodedRels = []
+            for objRels in sceneRels:
+                rels = []
+                for rel in objRels:
+                    rels.append(sceneDict.encodeSeq(rel))
+                encodedRels.append(rels)
+
+            objectEmbeddings = torch.zeros((150, 300), device=device)
+            for j, obj in enumerate(encodedObjName):
+                objectEmbeddings[j, :] = torch.tensor(embedding[obj], device=device)
+
+            attrEmbeddings = torch.zeros((150, 300), device=device)
+            for j, attrs in enumerate(encodedAttrs):
+                if len(attrs) != 0:
+                    wordEmbs = torch.zeros((len(attrs), 300), device=device)
+                    for i_a, attr in enumerate(attrs):
+                        wordEmbs[i_a] = torch.tensor(embedding[attr], device=device)
+                    attrEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
+
+            relsEmbeddings = torch.zeros((150, 300), device=device)
+            for j, rels in enumerate(encodedRels):
+                if len(rels) != 0:
+                    wordEmbs = torch.zeros((len(rels), 300), device=device)
+                    for i_r, rel in enumerate(rels):
+                        wordEmbs[i_r] = torch.tensor((embedding[rel[0]] + embedding[rel[1]]) / 2, device=device)
+                    relsEmbeddings[j, :] = torch.mean(wordEmbs, dim=0)
+            
+            pre_lstm = torch.cat((objectEmbeddings.unsqueeze(1), attrEmbeddings.unsqueeze(1), relsEmbeddings.unsqueeze(1)), dim=1)
+            _, (hidden_state, _) = self.LSTM_encoder(pre_lstm)
+            #hidden_state = torch.cat((objectEmbeddings, attrEmbeddings, relsEmbeddings), dim=1)
+            imageBatch[i] = hidden_state[0]
+
+        #hidden_states = self.dense(imageBatch)
+        #hidden_states = self.dropout(hidden_states)
+        return imageBatch #hidden_states #
 
 @add_start_docstrings(
     """
@@ -1219,6 +1404,176 @@ class ElectraForQuestionAnsweringVQAPool_MultiVote(ElectraPreTrainedModel):
             attentions=discriminator_hidden_states.attentions,
         )
 
+@add_start_docstrings(
+    """
+    ELECTRA Model with a span classification head on top for extractive question-answering tasks like SQuAD (a linear
+    layers on top of the hidden-states output to compute `span start logits` and `span end logits`).""",
+    ELECTRA_START_DOCSTRING,
+)
+class ElectraForQuestionAnsweringSteroidsSG(ElectraPreTrainedModel):
+    config_class = ElectraConfig
+    base_model_prefix = "electra"
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.num_labels = config.num_labels
+        self.num_choices = 2913
+        self.electra = ElectraModelS2(config)
+        self.decoder = ElectraDirectedAttention(config)
+        self.hidden_size = config.hidden_size
+        self.qa_outputs_start = nn.Linear(config.hidden_size, 1)
+        self.qa_outputs_end = nn.Linear(config.hidden_size,1)
+        self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(3*config.hidden_size, self.num_choices))
+
+        self.conv_linear = nn.Linear(512, 384)
+
+        self.conv1d_1 = nn.Conv1d(in_channels=2*config.hidden_size,out_channels=3*config.hidden_size//2,kernel_size=3,padding=1)
+        self.conv1d_2 = nn.Conv1d(in_channels=3*config.hidden_size//2,out_channels=config.hidden_size,kernel_size=3,padding=1)
+
+        self.LayerNorm = BertLayerNorm(config.hidden_size, eps=1e-12)
+        self.endLSTM = nn.LSTM(2*config.hidden_size,config.hidden_size,num_layers=1,batch_first=True,dropout=0.1,bidirectional=False)
+
+        self.skip_encoder_start = ElectraSkipEncoder(config)
+        self.skip_encoder_end = ElectraSkipEncoder(config)
+
+        self.init_weights()
+
+    @add_start_docstrings_to_callable(ELECTRA_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
+    @add_code_sample_docstrings(
+        tokenizer_class=_TOKENIZER_FOR_DOC,
+        checkpoint="google/electra-small-discriminator",
+        output_type=QuestionAnsweringModelOutput,
+        config_class=_CONFIG_FOR_DOC,
+    )
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        position_ids=None,
+        head_mask=None,
+        inputs_embeds=None,
+        start_positions=None,
+        end_positions=None,
+        is_impossibles=None,
+        orig_answers=None,
+        titles=None,
+        output_attentions=None,
+        output_hidden_states=None,
+        return_dict=None,
+        scene_dataset=None,
+        scene_dict=None,
+        embedding=None
+    ):
+        r"""
+        start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
+            Labels for position (index) of the start of the labelled span for computing the token classification loss.
+            Positions are clamped to the length of the sequence (`sequence_length`).
+            Position outside of the sequence are not taken into account for computing the loss.
+        end_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
+            Labels for position (index) of the end of the labelled span for computing the token classification loss.
+            Positions are clamped to the length of the sequence (`sequence_length`).
+            Position outside of the sequence are not taken into account for computing the loss.
+        """
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output,pooled_output,hidden_states = self.electra(
+                                                                                    input_ids,
+                                                                                    attention_mask=attention_mask,
+                                                                                    token_type_ids=token_type_ids,
+                                                                                    position_ids=position_ids,
+                                                                                    head_mask=head_mask,
+                                                                                    inputs_embeds=inputs_embeds,
+                                                                                    output_attentions=output_attentions,
+                                                                                    output_hidden_states=True, #output_hidden_states,
+                                                                                    return_dict=return_dict,
+                                                                                    titles=titles,
+                                                                                    scene_dataset=scene_dataset, 
+                                                                                    embedding=embedding, 
+                                                                                    scene_dict=scene_dict,
+                                                                                )
+
+        cdeencoded_layers,qdeencoded_layers = self.decoder(sequence_output, #2d --> 1d translated
+                                      c_attention_mask,q_attention_mask,
+                                      output_all_deencoded_layers=False)
+
+        #Pick final C2Q and Q2C embedding vectors for the batch
+        cdeencoded_layers = cdeencoded_layers[-1]
+        qdeencoded_layers = qdeencoded_layers[-1]
+
+        cdeencoded_layers = cdeencoded_layers.unsqueeze(-1)
+        qdeencoded_layers = qdeencoded_layers.unsqueeze(-1)
+        enc_cat = torch.cat((cdeencoded_layers,qdeencoded_layers), dim=-1)
+
+        encshape = enc_cat.shape
+        enc_cat = enc_cat.reshape(encshape[0],encshape[1],-1).contiguous()
+        enc_cat = enc_cat.permute(0,2,1).contiguous()
+        sequence_output1d_1 = self.conv1d_1(enc_cat)
+        sequence_output1d = self.conv1d_2(sequence_output1d_1)
+
+        #sequence_output1d = self.conv_linear(sequence_output1d)
+        sequence_output1d = sequence_output1d.permute(0,2,1).contiguous()
+
+        #Skip connection from Bert Layer
+        sequence_output1d = self.LayerNorm(sequence_output1d + sequence_output)
+
+        #Flatten LSTM parameters for memory optimization
+        self.endLSTM.flatten_parameters()
+
+        #Start and End Self Attention for span prediction
+        encoded_skip_start=self.skip_encoder_start(sequence_output1d,extended_attention_mask,output_hidden_states=False)
+        encoded_skip_end=self.skip_encoder_end(sequence_output1d,extended_attention_mask,output_hidden_states=False)
+        for_end = torch.cat((encoded_skip_end[-1][:,:384,:],encoded_skip_start[-1][:,:384,:]),-1)
+
+        seq_end,_  = self.endLSTM(for_end)
+        start_logits = self.qa_outputs_start(encoded_skip_start[-1][:,:384,:])
+        end_logits = self.qa_outputs_end(seq_end)
+
+        #Logits!
+        start_logits = start_logits.squeeze(-1)
+        end_logits = end_logits.squeeze(-1)
+
+
+        voter_1 = torch.mean(sequence_output1d, dim=1) 
+        voter_2 = torch.mean(encoded_skip_start[-1], dim=1) 
+        voter_3 = torch.mean(seq_end, dim=1) 
+
+        sequence_mean = torch.cat((voter_1, voter_2, voter_3), dim=1)
+
+        orig_ans_log = self.orig_ans_choice(sequence_mean)
+
+        total_loss = None
+        if start_positions is not None and end_positions is not None:
+            # If we are on multi-GPU, split add a dimension
+            if len(start_positions.size()) > 1:
+                start_positions = start_positions.squeeze(-1)
+            if len(end_positions.size()) > 1:
+                end_positions = end_positions.squeeze(-1)
+            if len(orig_answers.size()) > 1:
+                orig_answers = orig_answers.squeeze(-1)
+            # sometimes the start/end positions are outside our model inputs, we ignore these terms
+            ignored_index = start_logits.size(1)
+            start_positions.clamp_(0, ignored_index)
+            end_positions.clamp_(0, ignored_index)
+
+            loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
+            start_loss = loss_fct(start_logits, start_positions)
+            end_loss = loss_fct(end_logits, end_positions)
+            loss_fct_c = CrossEntropyLoss()
+            choice_loss = loss_fct_c(orig_ans_log, orig_answers)
+            total_loss = (start_loss + end_loss + choice_loss) / 3
+
+        if not return_dict:
+            output = (start_logits, end_logits, orig_ans_log,) #+ discriminator_hidden_states[1:]
+            return ((total_loss,) + output) if total_loss is not None else output
+
+        return QuestionAnsweringModelOutput(
+            loss=total_loss,
+            start_logits=start_logits,
+            end_logits=end_logits,
+            hidden_states=discriminator_hidden_states.hidden_states,
+            attentions=discriminator_hidden_states.attentions,
+        )
 
 
 @add_start_docstrings(
