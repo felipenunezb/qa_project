@@ -1477,7 +1477,7 @@ class ElectraForQuestionAnsweringSteroidsSG(ElectraPreTrainedModel):
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output,pooled_output,hidden_states = self.electra(
+        extended_attention_mask,c_attention_mask,q_attention_mask,sequence_output = self.electra(
                                                                                     input_ids,
                                                                                     attention_mask=attention_mask,
                                                                                     token_type_ids=token_type_ids,
