@@ -1419,7 +1419,7 @@ class ElectraForQuestionAnsweringSteroidsSG(ElectraPreTrainedModel):
         self.num_labels = config.num_labels
         self.num_choices = 2913
         self.electra = ElectraModelS2(config)
-        self.decoder = ElectraDirectedAttention(config)
+        self.decoder = BertDirectedAttention(config)
         self.hidden_size = config.hidden_size
         self.qa_outputs_start = nn.Linear(config.hidden_size, 1)
         self.qa_outputs_end = nn.Linear(config.hidden_size,1)
