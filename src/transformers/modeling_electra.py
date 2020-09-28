@@ -1433,8 +1433,8 @@ class ElectraForQuestionAnsweringSteroidsSG(ElectraPreTrainedModel):
         self.LayerNorm = BertLayerNorm(config.hidden_size, eps=1e-12)
         self.endLSTM = nn.LSTM(2*config.hidden_size,config.hidden_size,num_layers=1,batch_first=True,dropout=0.1,bidirectional=False)
 
-        self.skip_encoder_start = ElectraSkipEncoder(config)
-        self.skip_encoder_end = ElectraSkipEncoder(config)
+        self.skip_encoder_start = BertSkipEncoder(config)
+        self.skip_encoder_end = BertSkipEncoder(config)
 
         self.init_weights()
 
