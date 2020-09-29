@@ -188,7 +188,10 @@ class SquadDataset(Dataset):
         p_mask = torch.tensor(feature.p_mask, dtype=torch.float)
         is_impossible = torch.tensor(feature.is_impossible, dtype=torch.float)
         #orig_ans = torch.tensor(feature.orig_ans, dtype=torch.float)
-        titles = torch.tensor(int(feature.title), dtype=torch.long)
+        if args.version_2_with_negative:
+            titles = torch.tensor(feature.title, dtype=torch.long)
+        else:
+            titles = torch.tensor(feature.title)
 
         inputs = {
             "input_ids": input_ids,
