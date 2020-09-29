@@ -969,9 +969,14 @@ class ElectraForQuestionAnswering(ElectraPreTrainedModel):
         start_positions=None,
         end_positions=None,
         is_impossibles=None,
+        orig_answers=None,
+        titles=None,
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        scene_dataset=None,
+        scene_dict=None,
+        embedding=None
     ):
         r"""
         start_positions (:obj:`torch.LongTensor` of shape :obj:`(batch_size,)`, `optional`, defaults to :obj:`None`):
