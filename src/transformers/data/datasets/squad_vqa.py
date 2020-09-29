@@ -191,7 +191,7 @@ class SquadDataset(Dataset):
         if self.args.version_2_with_negative:
             titles = torch.tensor(feature.title, dtype=torch.long)
         else:
-            titles = torch.tensor(feature.title)
+            titles = None
 
         inputs = {
             "input_ids": input_ids,
