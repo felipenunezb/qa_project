@@ -141,7 +141,8 @@ class SquadDataset(Dataset):
         # and the others will use the cache.
         lock_path = cached_features_file + ".lock"
         with FileLock(lock_path):
-            ans_to_ix, ix_to_ans = self.processor.create_dicts(args.data_dir)
+            if args.version_2_with_negative:
+                ans_to_ix, ix_to_ans = self.processor.create_dicts(args.data_dir)
             if os.path.exists(cached_features_file) and not args.overwrite_cache:
                 start = time.time()
                 self.features = torch.load(cached_features_file)
