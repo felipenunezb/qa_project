@@ -143,6 +143,8 @@ class SquadDataset(Dataset):
         with FileLock(lock_path):
             if args.version_2_with_negative:
                 ans_to_ix, ix_to_ans = self.processor.create_dicts(args.data_dir)
+            else:
+                ans_to_ix, ix_to_ans = None, None
             if os.path.exists(cached_features_file) and not args.overwrite_cache:
                 start = time.time()
                 self.features = torch.load(cached_features_file)
