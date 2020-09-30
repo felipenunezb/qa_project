@@ -106,6 +106,7 @@ from .modeling_electra import (
     ElectraForQuestionAnsweringVQAPool,
     ElectraForQuestionAnsweringVQAPool_MultiVote,
     ElectraForQuestionAnsweringSteroidsSG,
+    ElectraForQuestionAnsweringSteroids,
     ElectraForSequenceClassification,
     ElectraForTokenClassification,
     ElectraModel,
@@ -407,6 +408,7 @@ MODEL_FOR_QUESTION_ANSWERING_VQAPool_MultiVote_MAPPING = OrderedDict(
 MODEL_FOR_QUESTION_ANSWERING_STEROIDS_MAPPING = OrderedDict(
     [
         (BertConfig, BertForQuestionAnsweringSteroids),
+        (ElectraConfig, ElectraForQuestionAnsweringSteroids),
     ]
 )
 
