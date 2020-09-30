@@ -189,7 +189,7 @@ class SquadDataset(Dataset):
         is_impossible = torch.tensor(feature.is_impossible, dtype=torch.float)
         #orig_ans = torch.tensor(feature.orig_ans, dtype=torch.float)
         if self.args.version_2_with_negative:
-            titles = torch.tensor(feature.title, dtype=torch.long)
+            titles = torch.tensor(int(feature.title), dtype=torch.long)
         else:
             titles = None
 
