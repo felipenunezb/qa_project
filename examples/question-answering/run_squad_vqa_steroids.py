@@ -452,7 +452,10 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=Fal
             examples = SquadV1Processor().get_examples_from_dataset(tfds_examples, evaluate=evaluate)
         else:
             processor = SquadV2Processor() if args.version_2_with_negative else SquadV1Processor()
-            ans_to_ix, ix_to_ans = processor.create_dicts(args.data_dir)
+            if args.version_2_with_negative:
+                ans_to_ix, ix_to_ans = processor.create_dicts(args.data_dir)
+            else:
+                ans_to_ix, ix_to_ans = {}, {}     
             if evaluate:
                 examples = processor.get_dev_examples(args.data_dir, filename=args.predict_file, to_ix_dict=ans_to_ix)
             else:
