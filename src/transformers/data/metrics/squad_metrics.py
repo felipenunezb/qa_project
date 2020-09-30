@@ -420,7 +420,6 @@ def compute_predictions_logits(
             result = unique_id_to_result[feature.unique_id]
             start_indexes = _get_best_indexes(result.start_logits, n_best_size)
             end_indexes = _get_best_indexes(result.end_logits, n_best_size)
-            choice_indexes = _get_best_indexes(result.choice_logits, n_best_size)
             # if we could have irrelevant answers, get the min score of irrelevant
             if version_2_with_negative:
                 feature_null_score = result.start_logits[0] + result.end_logits[0]
