@@ -2052,7 +2052,7 @@ class ElectraForQuestionAnsweringSteroids(ElectraPreTrainedModel):
 @add_start_docstrings(
     """Bert Model with a span classification head on top for extractive question-answering tasks like SQuAD (a linear
     layers on top of the hidden-states output to compute `span start logits` and `span end logits`). """,
-    BERT_START_DOCSTRING,
+    ELECTRA_START_DOCSTRING,
 )
 class ElectraForQuestionAnsweringEnriched(BertPreTrainedModel):
     def __init__(self, config):
@@ -2066,7 +2066,7 @@ class ElectraForQuestionAnsweringEnriched(BertPreTrainedModel):
 
         self.init_weights()
 
-    @add_start_docstrings_to_callable(BERT_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
+    @add_start_docstrings_to_callable(ELECTRA_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
     @add_code_sample_docstrings(
         tokenizer_class=_TOKENIZER_FOR_DOC,
         checkpoint="bert-base-uncased",
