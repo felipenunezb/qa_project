@@ -41,7 +41,7 @@ from transformers import (
 )
 from transformers.data.metrics.squad_metrics import (
     compute_predictions_log_probs,
-    compute_predictions_logits_vqa as compute_predictions_logits,
+    compute_predictions_logits as compute_predictions_logits,
     squad_evaluate,
 )
 from transformers.data.processors.squad_vqa import SquadResult, SquadV1Processor, SquadV2Processor
