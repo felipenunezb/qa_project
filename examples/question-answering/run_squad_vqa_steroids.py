@@ -395,12 +395,12 @@ def evaluate(args, model, tokenizer, prefix=""):
             output_prediction_file,
             output_nbest_file,
             output_null_log_odds_file,
-            output_nbest_choice_file,
+            #output_nbest_choice_file,
             args.verbose_logging,
             args.version_2_with_negative,
             args.null_score_diff_threshold,
             tokenizer,
-            ix_to_ans_dict,
+            #ix_to_ans_dict,
         )
 
     # Compute the F1 and exact scores.
