@@ -1510,7 +1510,7 @@ class ElectraForQuestionAnsweringVQAPool_MultiVote(ElectraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.num_choices = 2913
+        self.num_choices = 1834 #2913
         self.electra = ElectraModel(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
@@ -1646,7 +1646,7 @@ class ElectraForQuestionAnsweringSteroidsSG(ElectraPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.num_choices = 2913
+        self.num_choices = 1834 #2913
         self.electra = ElectraModelS2(config)
         self.decoder = BertDirectedAttention(config)
         self.hidden_size = config.hidden_size
@@ -2058,7 +2058,7 @@ class ElectraForQuestionAnsweringEnriched(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.num_choices = 2913
+        self.num_choices = 1834 #2913
         self.bert = ElectraModelE(config)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
