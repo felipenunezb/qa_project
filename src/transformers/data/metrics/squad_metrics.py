@@ -623,8 +623,12 @@ def compute_predictions_logits_vqa(
 
         if example_index == 142:
             print(f"example_index: {example_index}")
-            print(features)
-            continue
+            print(example.title)
+            print(example.qas_id)
+            print(example.context_text)
+            print(example.question_text)
+            print(example.answer_text)
+            break
 
 
         prelim_predictions = []
