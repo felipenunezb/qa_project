@@ -618,12 +618,13 @@ def compute_predictions_logits_vqa(
     scores_diff_json = collections.OrderedDict()
     all_nbest_choice_json = collections.OrderedDict()
 
-    print(f"len(all_examples): {len(all_examples)}")
-
     for (example_index, example) in enumerate(all_examples):
         features = example_index_to_features[example_index]
 
-        print(f"example_index: {example_index}")
+        if example_index == 142:
+            print(f"example_index: {example_index}")
+            print(features)
+            continue
 
 
         prelim_predictions = []
