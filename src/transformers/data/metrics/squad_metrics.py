@@ -621,6 +621,9 @@ def compute_predictions_logits_vqa(
     for (example_index, example) in enumerate(all_examples):
         features = example_index_to_features[example_index]
 
+        print(f"example_index: {example_index}")
+        print(f"example: {example}")
+
         prelim_predictions = []
         prelim_choices = []
         # keep track of the minimum score of null start+end of position 0
@@ -724,13 +727,11 @@ def compute_predictions_logits_vqa(
             "NbestPrediction", ["text", "start_logit", "end_logit"]
         )
 
-        print(f"len(features): {len(features)}")
         seen_predictions = {}
         nbest = []
         for pred in prelim_predictions:
             if len(nbest) >= n_best_size:
                 break
-            print(f"feature_index: {pred.feature_index}")
             feature = features[pred.feature_index]
             if pred.start_index > 0:  # this is a non-null prediction
                 tok_tokens = feature.tokens[pred.start_index : (pred.end_index + 1)]
