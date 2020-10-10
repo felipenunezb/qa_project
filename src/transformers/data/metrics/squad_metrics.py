@@ -621,16 +621,6 @@ def compute_predictions_logits_vqa(
     for (example_index, example) in enumerate(all_examples):
         features = example_index_to_features[example_index]
 
-        if example_index == 142:
-            print(f"example_index: {example_index}")
-            print(example.title)
-            print(example.qas_id)
-            print(example.context_text)
-            print(example.question_text)
-            print(example.answer_text)
-            break
-
-
         prelim_predictions = []
         prelim_choices = []
         # keep track of the minimum score of null start+end of position 0
