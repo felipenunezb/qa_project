@@ -558,20 +558,21 @@ class Trainer:
                     continue
 
                 #Input span mask
-                print(len(train_features))
                 print(inputs['input_ids'])
+                batch_size = len(inputs['input_ids'])
+                input_size = len(inputs['input_ids'][0])
   
                 all_input_ids = torch.tensor([f for f in inputs], dtype=torch.long)
                 example_indices = torch.arange(all_input_ids.size(0), dtype=torch.long)
-                input_span_mask = np.zeros((all_input_ids.size(0), all_input_ids.size(1), all_input_ids.size(1)))
-                for batch_idx, ex_idx in enumerate(example_indices):
-                    train_feature = train_features[ex_idx.item()]
+                input_span_mask = np.zeros((batch_size, input_size, input_size))
+                for batch_idx in range(batch_size):
+                    train_feature = train_features[inputs['example_ix'][batch_idx]]
                     train_span_mask = train_feature.input_span_masks
                     for idx, i_mask in enumerate(train_span_mask):
                         for j in i_mask:
                             input_span_mask[batch_idx, idx, j] = 1
+
                 input_span_mask = torch.tensor(input_span_mask, dtype=torch.long)
-                input_span_mask = input_span_mask.to(device)
 
                 inputs.update({"input_span_masks": input_span_mask})
 
