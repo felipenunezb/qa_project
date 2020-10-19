@@ -184,6 +184,8 @@ class SquadDataset(Dataset):
         # Convert to Tensors and build dataset
         feature = self.features[i]
 
+        print(feature.input_span_mask.size())
+        
         input_ids = torch.tensor(feature.input_ids, dtype=torch.long)
         attention_mask = torch.tensor(feature.attention_mask, dtype=torch.long)
         token_type_ids = torch.tensor(feature.token_type_ids, dtype=torch.long)
