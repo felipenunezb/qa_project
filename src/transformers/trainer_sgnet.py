@@ -531,6 +531,8 @@ class Trainer:
         train_iterator = trange(
             epochs_trained, int(num_train_epochs), desc="Epoch", disable=not self.is_local_process_zero()
         )
+
+        train_features = train_dataloader.features
             
         for epoch in train_iterator:
             if isinstance(train_dataloader, DataLoader) and isinstance(train_dataloader.sampler, DistributedSampler):
@@ -560,7 +562,7 @@ class Trainer:
                 example_indices = torch.arange(all_input_ids.size(0), dtype=torch.long)
                 input_span_mask = np.zeros((all_input_ids.size(0), all_input_ids.size(1), all_input_ids.size(1)))
                 for batch_idx, ex_idx in enumerate(example_indices):
-                    train_feature = inputs[ex_idx.item()]
+                    train_feature = train_features[ex_idx.item()]
                     train_span_mask = train_feature.input_span_masks
                     for idx, i_mask in enumerate(train_span_mask):
                         for j in i_mask:
