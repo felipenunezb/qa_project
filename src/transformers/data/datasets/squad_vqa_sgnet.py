@@ -184,7 +184,7 @@ class SquadDataset(Dataset):
         # Convert to Tensors and build dataset
         feature = self.features[i]
 
-        print(feature.input_span_mask.size())
+        print(feature.input_span_mask)
         
         input_ids = torch.tensor(feature.input_ids, dtype=torch.long)
         attention_mask = torch.tensor(feature.attention_mask, dtype=torch.long)
@@ -192,6 +192,7 @@ class SquadDataset(Dataset):
         cls_index = torch.tensor(feature.cls_index, dtype=torch.long)
         p_mask = torch.tensor(feature.p_mask, dtype=torch.float)
         is_impossible = torch.tensor(feature.is_impossible, dtype=torch.float)
+        
         #input_span_mask = torch.tensor(feature.input_span_mask, dtype=torch.long)
         #orig_ans = torch.tensor(feature.orig_ans, dtype=torch.float)
         if self.args.version_2_with_negative:
@@ -204,7 +205,7 @@ class SquadDataset(Dataset):
             "attention_mask": attention_mask,
             "token_type_ids": token_type_ids,
             "titles": titles,
-            "input_span_masks": feature.input_span_mask #input_span_mask
+            #"input_span_masks": feature.input_span_mask #input_span_mask
         }
 
         if self.args.model_type in ["xlm", "roberta", "distilbert", "camembert"]:
