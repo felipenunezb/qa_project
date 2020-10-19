@@ -558,11 +558,11 @@ class Trainer:
                     continue
 
                 #Input span mask
-                print(inputs['input_ids'])
+                #print(inputs['input_ids'])
                 batch_size = len(inputs['input_ids'])
                 input_size = len(inputs['input_ids'][0])
-                print(batch_size)
-                print(input_size)
+                #print(batch_size)
+                #print(input_size)
   
                 input_span_mask = np.zeros((batch_size, input_size, input_size))
                 for batch_idx in range(batch_size):
@@ -573,11 +573,11 @@ class Trainer:
                             input_span_mask[batch_idx, idx, j] = 1
 
                 input_span_mask = torch.tensor(input_span_mask, dtype=torch.long)
-                print(input_span_mask.shape)
+                #print(input_span_mask.shape)
 
                 inputs.update({"input_span_mask": input_span_mask})
 
-                print(inputs)
+                #print(inputs)
                 del inputs['example_ix']
 
                 tr_loss += self.training_step(model, inputs)

@@ -3309,10 +3309,10 @@ class BertForQuestionAnsweringVQA_SGNet(BertPreTrainedModel):
         span_sequence_output = self.span_layer(bert_output, extended_span_attention_mask)[0]
 
         w = F.softmax(self.w, dim=-1)
-        print(w)
-        print(w.shape)
-        print(bert_output.shape)
-        print(span_sequence_output.shape)
+        #print(w)
+        #print(w.shape)
+        #print(bert_output.shape)
+        #print(span_sequence_output.shape)
         sequence_output = self.gamma * (w[0] * bert_output + w[1] * span_sequence_output)
 
         #scenedata = self.scene_emb(titles, scene_dataset, embedding, scene_dict)
