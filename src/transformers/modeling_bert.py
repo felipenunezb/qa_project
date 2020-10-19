@@ -3306,9 +3306,9 @@ class BertForQuestionAnsweringVQA_SGNet(BertPreTrainedModel):
             dtype=next(self.parameters()).dtype)  # fp16 compatibility
         extended_span_attention_mask = (1.0 - extended_span_attention_mask) * -10000.0
 
-        span_sequence_output = self.span_layer(bert_output, extended_span_attention_mask)
+        span_sequence_output = self.span_layer(bert_output, extended_span_attention_mask)[0]
 
-        w = F.softmax(self.w)
+        w = F.softmax(self.w, dim=-1)
         print(w)
         print(w.shape)
         print(bert_output.shape)
