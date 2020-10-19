@@ -201,7 +201,7 @@ class SquadDataset(Dataset):
             "input_ids": input_ids,
             "attention_mask": attention_mask,
             "token_type_ids": token_type_ids,
-            "titles": titles
+            "titles": titles,
             "input_span_masks": input_span_mask
         }
 
