@@ -3308,8 +3308,6 @@ class BertForQuestionAnsweringVQA_SGNet(BertPreTrainedModel):
 
         span_sequence_output = self.span_layer(bert_output, extended_span_attention_mask)
 
-        print(w)
-        print(w.shape)
         w = F.softmax(self.w)
         print(w)
         print(w.shape)
