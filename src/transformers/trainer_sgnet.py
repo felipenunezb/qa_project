@@ -562,8 +562,6 @@ class Trainer:
                 batch_size = len(inputs['input_ids'])
                 input_size = len(inputs['input_ids'][0])
   
-                all_input_ids = torch.tensor([f for f in inputs], dtype=torch.long)
-                example_indices = torch.arange(all_input_ids.size(0), dtype=torch.long)
                 input_span_mask = np.zeros((batch_size, input_size, input_size))
                 for batch_idx in range(batch_size):
                     train_feature = train_features[inputs['example_ix'][batch_idx]]
