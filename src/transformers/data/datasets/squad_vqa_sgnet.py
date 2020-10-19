@@ -192,6 +192,7 @@ class SquadDataset(Dataset):
         is_impossible = torch.tensor(feature.is_impossible, dtype=torch.float)
 
         print(len(feature.input_span_mask))
+        print(feature.input_span_mask)
         
         #input_span_mask = torch.tensor(feature.input_span_mask, dtype=torch.long)
         #orig_ans = torch.tensor(feature.orig_ans, dtype=torch.float)
