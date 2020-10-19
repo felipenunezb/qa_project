@@ -372,8 +372,8 @@ def squad_convert_example_to_features(
    #input_span_mask[1:select_doc_len + 1, 1:select_doc_len + 1] = doc_span_mask[start_doc_ix:end_doc_ix + 1,
     #                                                                    start_doc_ix:end_doc_ix + 1]
         input_span_mask[select_que_len + 2:select_que_len + select_doc_len + 2,
-        select_que_len + 2:select_que_len + select_doc_len + 2] = doc_span_mask[start_doc_ix:end_doc_ix + 1, 
-                                                                    start_doc_ix:end_doc_ix + 1]
+        select_que_len + 2:select_que_len + select_doc_len + 2] = doc_span_mask[start_doc_ix:end_doc_ix, 
+                                                                    start_doc_ix:end_doc_ix]
         #input_span_mask[select_doc_len + 2:select_doc_len + select_que_len + 2,
         #select_doc_len + 2:select_doc_len + select_que_len + 2] = que_span_mask
         record_mask = []
