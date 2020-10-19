@@ -559,11 +559,9 @@ class Trainer:
                     continue
 
                 #Input span mask
-                print(type(inputs))
-                for f in inputs:
-                    print(type(f))
-                    print(len(f))
-                all_input_ids = torch.tensor([f for f in inputs['input_ids']], dtype=torch.long)
+                print(inputs.keys())
+  
+                all_input_ids = torch.tensor([f for f in inputs], dtype=torch.long)
                 example_indices = torch.arange(all_input_ids.size(0), dtype=torch.long)
                 input_span_mask = np.zeros((all_input_ids.size(0), all_input_ids.size(1), all_input_ids.size(1)))
                 for batch_idx, ex_idx in enumerate(example_indices):

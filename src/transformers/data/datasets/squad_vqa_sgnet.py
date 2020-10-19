@@ -183,8 +183,6 @@ class SquadDataset(Dataset):
     def __getitem__(self, i) -> Dict[str, torch.Tensor]:
         # Convert to Tensors and build dataset
         feature = self.features[i]
-
-        print(feature.input_span_mask)
         
         input_ids = torch.tensor(feature.input_ids, dtype=torch.long)
         attention_mask = torch.tensor(feature.attention_mask, dtype=torch.long)
