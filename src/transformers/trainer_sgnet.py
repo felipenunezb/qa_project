@@ -578,6 +578,7 @@ class Trainer:
                 inputs.update({"input_span_masks": input_span_mask})
 
                 print(inputs)
+                del inputs['example_ix']
 
                 tr_loss += self.training_step(model, inputs)
 
