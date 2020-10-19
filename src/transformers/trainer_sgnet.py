@@ -533,7 +533,6 @@ class Trainer:
         )
 
         train_features = self.train_dataset.features
-        print(type(train_features))
             
         for epoch in train_iterator:
             if isinstance(train_dataloader, DataLoader) and isinstance(train_dataloader.sampler, DistributedSampler):
@@ -559,7 +558,8 @@ class Trainer:
                     continue
 
                 #Input span mask
-                print(inputs.keys())
+                print(len(train_features))
+                print(inputs['input_ids'])
   
                 all_input_ids = torch.tensor([f for f in inputs], dtype=torch.long)
                 example_indices = torch.arange(all_input_ids.size(0), dtype=torch.long)
