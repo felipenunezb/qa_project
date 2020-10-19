@@ -204,6 +204,7 @@ if is_torch_available():
         AutoModelForQuestionAnsweringVQA_VanillaSG,
         AutoModelForQuestionAnsweringSteroidsSG,
         AutoModelForQuestionAnsweringE,
+        AutoModelForQuestionAnswering_SGNet,
         AutoModelWithLMHead,
         AutoModelForCausalLM,
         AutoModelForMaskedLM,
@@ -227,6 +228,7 @@ if is_torch_available():
         MODEL_FOR_QUESTION_ANSWERING_VanillaSG_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_STEROIDSSG_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_E_MAPPING,
+        MODEL_FOR_QUESTION_ANSWERING_SGNet_MAPPING,
         MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING,
         MODEL_FOR_MULTIPLE_CHOICE_MAPPING,
     )
