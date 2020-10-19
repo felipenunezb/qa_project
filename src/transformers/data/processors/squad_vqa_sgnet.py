@@ -898,12 +898,12 @@ class SquadProcessor(DataProcessor):
                     cnt = 0
                     for sent_tokens in new_sen_list:
                         new_span_sen = []
-                        new_head_sen = []
-                        new_type_sen = []
+                        #new_head_sen = []
+                        #new_type_sen = []
                         for _ in sent_tokens:
                             new_span_sen.append(span_doc[cnt])
-                            new_head_sen.append(head_doc[cnt])
-                            new_type_sen.append(type_doc[cnt])
+                            #new_head_sen.append(head_doc[cnt])
+                            #new_type_sen.append(type_doc[cnt])
                             cnt += 1
                         new_span_doc.append(new_span_sen)
                         #new_head_doc.append(new_head_sen)
