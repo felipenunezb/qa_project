@@ -567,7 +567,7 @@ class Trainer:
                 input_span_mask = np.zeros((batch_size, input_size, input_size))
                 for batch_idx in range(batch_size):
                     train_feature = train_features[inputs['example_ix'][batch_idx]]
-                    train_span_mask = train_feature.input_span_masks
+                    train_span_mask = train_feature.input_span_mask
                     for idx, i_mask in enumerate(train_span_mask):
                         for j in i_mask:
                             input_span_mask[batch_idx, idx, j] = 1
