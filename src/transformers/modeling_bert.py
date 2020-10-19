@@ -3236,6 +3236,10 @@ class BertForQuestionAnsweringVQA_SGNet(BertPreTrainedModel):
         self.num_labels = config.num_labels
         self.num_choices = 2913 #VG #1834 #GQA
         self.bert = BertModel(config)
+        self.span_layer = BertLayer(config)
+        self.w = nn.Parameter(torch.Tensor([0.5, 0.5]))
+        self.gamma = nn.Parameter(torch.ones(1))
+        self.dropout = nn.Dropout(0.3)
         self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
         self.orig_ans_choice = nn.Sequential(nn.Dropout(p=config.hidden_dropout_prob), nn.Linear(4*config.hidden_size, self.num_choices))
         self.init_weights()
