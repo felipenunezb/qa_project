@@ -575,7 +575,7 @@ class Trainer:
                 input_span_mask = torch.tensor(input_span_mask, dtype=torch.long)
                 print(input_span_mask.shape)
 
-                inputs.update({"input_span_masks": input_span_mask})
+                inputs.update({"input_span_mask": input_span_mask})
 
                 print(inputs)
                 del inputs['example_ix']
