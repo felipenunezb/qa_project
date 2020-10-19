@@ -26,9 +26,9 @@ from tqdm.auto import tqdm, trange
 import json
 
 from transformers import AutoConfig, AutoModelForQuestionAnswering_SGNet as AutoModelForQuestionAnswering, AutoTokenizer, HfArgumentParser
-from transformers.data.datasets.squad_vqa_sgnet import SquadDataset
-from transformers import SquadDataTrainingArguments as DataTrainingArguments
-from transformers import Trainer, TrainingArguments
+from transformers.data.datasets.squad_vqa_sgnet import SquadDataset, SquadDataTrainingArguments as DataTrainingArguments
+#from transformers import SquadDataTrainingArguments as DataTrainingArguments
+from transformers.trainer_sgnet import Trainer, TrainingArguments
 #from transformers import squad_convert_examples_to_features
 from transformers.data.processors.squad_vqa_sgnet import squad_convert_examples_to_features, SquadResult, SquadV1Processor, SquadV2Processor, SquadProcessor, initializeWordEmbeddings
 from transformers import SymbolDict, initEmbRandom
