@@ -888,13 +888,13 @@ class SquadProcessor(DataProcessor):
                     assert dqtag["qas_id"] == qas_id
 
                     span_doc = dqtag["span_doc"]
-                    head_doc = dqtag["head_doc"]
-                    type_doc = dqtag["type_doc"]
+                    #head_doc = dqtag["head_doc"]
+                    #type_doc = dqtag["type_doc"]
                     #assert len(span_doc) == len(head_doc) == len(type_doc) == cnt_token, qas_id
                     # reconstruct into sentences
                     new_span_doc = []
-                    new_head_doc = []
-                    new_type_doc = []
+                    #new_head_doc = []
+                    #new_type_doc = []
                     cnt = 0
                     for sent_tokens in new_sen_list:
                         new_span_sen = []
@@ -906,8 +906,8 @@ class SquadProcessor(DataProcessor):
                             new_type_sen.append(type_doc[cnt])
                             cnt += 1
                         new_span_doc.append(new_span_sen)
-                        new_head_doc.append(new_head_sen)
-                        new_type_doc.append(new_type_sen)
+                        #new_head_doc.append(new_head_sen)
+                        #new_type_doc.append(new_type_sen)
                         
                     question_text = qa["question"]
                     start_position_character = None
