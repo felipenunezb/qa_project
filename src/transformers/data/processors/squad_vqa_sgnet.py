@@ -822,7 +822,7 @@ class SquadProcessor(DataProcessor):
             all_dqtag_data.append(dqtag_data)
 
         examples = []
-        for entry in tqdm(input_data):
+        for entry in tqdm(input_data, desc='span mask creation'):
             title = entry["title"]
             for paragraph in entry["paragraphs"]:
                 context_text = paragraph["context"]
