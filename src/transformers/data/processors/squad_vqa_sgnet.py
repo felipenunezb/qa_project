@@ -145,7 +145,7 @@ def squad_convert_example_to_features(
         else:
             sub_que_span.append(head_spans)
 
-    assert len(sub_que_span) == len(query_tokens)
+    #assert len(sub_que_span) == len(query_tokens)
 
     tok_to_orig_index = []
     orig_to_tok_index = []
@@ -166,12 +166,12 @@ def squad_convert_example_to_features(
         pre_tok_len += len(sub_doc_tok)
 
     cnt_span = 0
-    for sen_idx, sen_span in enumerate(all_doc_span):
-        for idx, (start_ix, end_ix) in enumerate(sen_span):
-            assert (start_ix <= len(sen_span) and end_ix <= len(sen_span))
-            cnt_span += 1
+    #for sen_idx, sen_span in enumerate(all_doc_span):
+    #    for idx, (start_ix, end_ix) in enumerate(sen_span):
+    #        assert (start_ix <= len(sen_span) and end_ix <= len(sen_span))
+    #        cnt_span += 1
 
-    assert cnt_span == len(example.doc_tokens)
+    #assert cnt_span == len(example.doc_tokens)
 
     sub_doc_span = []
     pre_sen_len = 0
@@ -192,7 +192,7 @@ def squad_convert_example_to_features(
             else:
                 sub_doc_span.append(head_spans)
 
-    assert len(sub_doc_span) == len(all_doc_tokens)
+    #assert len(sub_doc_span) == len(all_doc_tokens)
 
     # making masks
     que_span_mask = np.zeros((len(sub_que_span), len(sub_que_span)))
