@@ -360,9 +360,9 @@ def squad_convert_example_to_features(
         p_mask[cls_index] = 0
 
         #Input mask based on head span
-        start_doc_ix = span['truncated_query_with_special_tokens_length']
-        end_doc_ix = span['truncated_query_with_special_tokens_length'] + span['paragraph_len']
-        select_doc_len = span['paragraph_len']
+        start_doc_ix = span["start"]
+        end_doc_ix = span["start"] + span["length"] - 1
+        select_doc_len = span['length']
         select_que_len = span['truncated_query_with_special_tokens_length'] - 2
         #assert len(head_select_idx) == select_doc_len
 
@@ -372,8 +372,8 @@ def squad_convert_example_to_features(
    #input_span_mask[1:select_doc_len + 1, 1:select_doc_len + 1] = doc_span_mask[start_doc_ix:end_doc_ix + 1,
     #                                                                    start_doc_ix:end_doc_ix + 1]
         input_span_mask[select_que_len + 2:select_que_len + select_doc_len + 2,
-        select_que_len + 2:select_que_len + select_doc_len + 2] = doc_span_mask[start_doc_ix:end_doc_ix, 
-                                                                    start_doc_ix:end_doc_ix]
+        select_que_len + 2:select_que_len + select_doc_len + 2] = doc_span_mask[start_doc_ix:end_doc_ix + 1, 
+                                                                    start_doc_ix:end_doc_ix + 1]
         #input_span_mask[select_doc_len + 2:select_doc_len + select_que_len + 2,
         #select_doc_len + 2:select_doc_len + select_que_len + 2] = que_span_mask
         record_mask = []
