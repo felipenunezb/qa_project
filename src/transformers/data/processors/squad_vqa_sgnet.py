@@ -874,14 +874,14 @@ class SquadProcessor(DataProcessor):
                             token = tmp_token+token
                             flag = False
                             tmp_token = ""
-                            assert token == doc_tokens[cnt_token]
+                            #assert token == doc_tokens[cnt_token]
 
                         if token != doc_tokens[cnt_token]:
-                            assert tok_ix == len(sent_tokens) - 1
+                            #assert tok_ix == len(sent_tokens) - 1
                             tmp_token = token
                             flag = True
                         else:
-                            assert token == doc_tokens[cnt_token]
+                            #assert token == doc_tokens[cnt_token]
                             new_sent_tokens.append(token)
 
                             cnt_token += 1
