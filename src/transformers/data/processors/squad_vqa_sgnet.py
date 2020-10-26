@@ -171,7 +171,7 @@ def squad_convert_example_to_features(
             try:
                 (start_ix <= len(sen_span) and end_ix <= len(sen_span))
             except:
-                print(start_ix, end_ix, len(sen_span))
+                print(sen_idx, start_ix, end_ix, len(sen_span))
             assert (start_ix <= len(sen_span) and end_ix <= len(sen_span))
             cnt_span += 1
 
