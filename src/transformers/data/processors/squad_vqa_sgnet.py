@@ -107,6 +107,8 @@ def squad_convert_example_to_features(
     org_doc_token = example.token_doc
     all_doc_span = example.doc_span
 
+    ex_title = example.title
+
     query_tokens = tokenizer.tokenize(example.question_text)
 
     que_tokens = []
@@ -168,7 +170,7 @@ def squad_convert_example_to_features(
     cnt_span = 0
     for sen_idx, sen_span in enumerate(all_doc_span):
         for idx, (start_ix, end_ix) in enumerate(sen_span):
-            assert (start_ix <= len(sen_span) and end_ix <= len(sen_span)), f"{sen_idx}, {start_ix}, {end_ix}, {len(sen_span)}"
+            assert (start_ix <= len(sen_span) and end_ix <= len(sen_span)), f"{ex_title}, {sen_idx}, {start_ix}, {end_ix}, {len(sen_span)}"
             cnt_span += 1
 
     assert cnt_span == len(example.doc_tokens)
