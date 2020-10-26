@@ -829,13 +829,16 @@ class SquadProcessor(DataProcessor):
             for paragraph in entry["paragraphs"]:
                 context_text = paragraph["context"]
 
-                sen_texts = simple_nlp.nlp(context_text)
+                #sen_texts = simple_nlp.nlp(context_text)
+                sen_texts = [f"{sent}." for sent in context_text.split('. ')]
                 sen_list = []
 
-                for sen_ix, sent in enumerate(sen_texts.sents):
+                #for sen_ix, sent in enumerate(sen_texts.sents):
+                for sen_ix, sent in enumerate(sen_texts):
                     sent_tokens = []
                     prev_is_whitespace = True
-                    for c in sent.string:
+                    #for c in sent.string:
+                    for c in sent:
                         if _is_whitespace(c):
                             prev_is_whitespace = True
                         else:
