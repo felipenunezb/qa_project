@@ -830,7 +830,7 @@ class SquadProcessor(DataProcessor):
                 context_text = paragraph["context"]
 
                 #sen_texts = simple_nlp.nlp(context_text)
-                sen_texts = [f"{sent}." for sent in context_text.split('. ')]
+                sen_texts = [f"{sent}." if sent[-1] != '.' else sent for sent in context_text.split('. ')]
                 sen_list = []
 
                 #for sen_ix, sent in enumerate(sen_texts.sents):
