@@ -168,6 +168,10 @@ def squad_convert_example_to_features(
     cnt_span = 0
     for sen_idx, sen_span in enumerate(all_doc_span):
         for idx, (start_ix, end_ix) in enumerate(sen_span):
+            try:
+                (start_ix <= len(sen_span) and end_ix <= len(sen_span))
+            except:
+                print(start_ix, end_ix, len(sen_span))
             assert (start_ix <= len(sen_span) and end_ix <= len(sen_span))
             cnt_span += 1
 
