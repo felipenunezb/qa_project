@@ -800,6 +800,13 @@ class SquadProcessor(DataProcessor):
 
         return self._create_examples(input_data, input_tag_data, "dev", to_ix_dict)
 
+    def catch(self, sent):
+        try:
+            return(f"{sent}." if sent[-1] != '.' else sent)
+        except:
+            print(sent)
+            return(sent)
+
     def _create_examples(self, input_data, input_tag_data, set_type, to_ix_dict):
         simple_nlp = SimpleNlp()
         is_training = set_type == "train"
@@ -830,7 +837,7 @@ class SquadProcessor(DataProcessor):
                 context_text = paragraph["context"]
 
                 #sen_texts = simple_nlp.nlp(context_text)
-                sen_texts = [f"{sent}." if sent[-1] != '.' else sent for sent in context_text.split('. ')]
+                sen_texts = [self.catch(sent) for sent in context_text.split('. ')]
                 sen_list = []
 
                 #for sen_ix, sent in enumerate(sen_texts.sents):
@@ -877,11 +884,11 @@ class SquadProcessor(DataProcessor):
                             #assert token == doc_tokens[cnt_token]
 
                         if token != doc_tokens[cnt_token]:
-                            #assert tok_ix == len(sent_tokens) - 1
+                            assert tok_ix == len(sent_tokens) - 1
                             tmp_token = token
                             flag = True
                         else:
-                            #assert token == doc_tokens[cnt_token]
+                            assert token == doc_tokens[cnt_token]
                             new_sent_tokens.append(token)
 
                             cnt_token += 1
