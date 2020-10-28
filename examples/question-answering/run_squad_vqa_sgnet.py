@@ -314,7 +314,6 @@ def evaluate(args, model, tokenizer, prefix=""):
         sceneDict.createVocab(minCount=0)
 
         if args.cached_embedding:
-            import numpy as np
             embedding = np.load(os.path.join(args.data_dir, args.cached_embedding))
         elif args.emb_file:
             embedding = initializeWordEmbeddings(args.emb_dim, 
