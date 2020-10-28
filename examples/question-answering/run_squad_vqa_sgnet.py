@@ -509,9 +509,9 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=Fal
             processor = SquadV2Processor() if args.version_2_with_negative else SquadV1Processor()
             ans_to_ix, ix_to_ans = processor.create_dicts(args.data_dir)
             if evaluate:
-                examples = processor.get_dev_examples(args.data_dir, filename=args.predict_file, to_ix_dict=ans_to_ix)
+                examples = processor.get_dev_examples(args.data_dir, input_tag_file=args.input_tag_file, to_ix_dict=ans_to_ix)
             else:
-                examples = processor.get_train_examples(args.data_dir, filename=args.train_file, to_ix_dict=ans_to_ix)
+                examples = processor.get_train_examples(args.data_dir, input_tag_file=args.input_tag_file, to_ix_dict=ans_to_ix)
 
         features, dataset = squad_convert_examples_to_features(
             examples=examples,
@@ -584,6 +584,12 @@ def main():
         type=str,
         help="The input evaluation file. If a data dir is specified, will look for the file there"
         + "If no data dir or train/predict files are specified, will run with tensorflow_datasets.",
+    )
+    parser.add_argument(
+        "--input_tag_file",
+        default=None,
+        type=str,
+        help="The input_tag_file.",
     )
     parser.add_argument(
         "--config_name", default="", type=str, help="Pretrained config name or path if not the same as model_name"
