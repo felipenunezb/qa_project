@@ -342,7 +342,7 @@ def evaluate(args, model, tokenizer, prefix=""):
                 for j in i_mask:
                     input_span_mask[batch_idx, idx, j] = 1
 
-        input_span_mask = torch.tensor(input_span_mask, dtype=torch.long)
+        input_span_mask = torch.tensor(input_span_mask, dtype=torch.long, device=args.device)
 
         with torch.no_grad():
             inputs = {
