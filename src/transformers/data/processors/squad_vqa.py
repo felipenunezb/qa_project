@@ -1021,17 +1021,18 @@ def initializeWordEmbeddings(dim, wordsDict=None, random=False, filename=None):
         with open(filename, 'r') as inFile:  
             for line in tqdm(inFile):
                 line = line.strip().split()
-                word = line[0].lower()
+                word = line[0].decode('UTF-8').lower()
                 vector = np.array([float(x) for x in line[1:]])
                 wordVectors[word] = vector
 
             for sym, idx in tqdm(wordsDict.sym2id.items()):
-                if " " in sym:
-                    symEmb = sentenceEmb(sym, wordVectors, 300)
+                clean_sym = sym.strip('.').strip().lower()
+                if " " in clean_sym:
+                    symEmb = sentenceEmb(clean_sym, wordVectors, 300)
                     embeddings[idx] = symEmb
                 else:
-                    if sym in wordVectors:
-                        embeddings[idx] = wordVectors[sym]
+                    if clean_sym in wordVectors:
+                        embeddings[idx] = wordVectors[clean_sym]
                         counter += 1
 
 
