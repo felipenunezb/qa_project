@@ -304,10 +304,10 @@ def evaluate(args, model, tokenizer, prefix=""):
         sceneDict = SymbolDict()
         for scene in tqdm(scene_dataset.values(), desc="Creating Scene Dictionary"):
             for obj in scene["objects"].values():
-                sceneDict.addSymbols(obj["name"])
+                sceneDict.addSymbols(obj["name"].strip('.').strip().lower())
                 sceneDict.addSymbols(obj["attributes"])
                 for rel in obj["relations"]:
-                   sceneDict.addSymbols(rel["name"])
+                   sceneDict.addSymbols(rel["name"].strip('.').strip().lower())
         #create vocab           
         sceneDict.createVocab(minCount=0)
 
