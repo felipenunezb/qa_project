@@ -2907,7 +2907,7 @@ class BertForQuestionAnsweringSteroidsSG(BertPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.num_labels = config.num_labels
-        self.num_choices = 1834# 2913
+        self.num_choices = 2913 #1834
         self.bert = BertModelS2(config)
         self.decoder = BertDirectedAttention(config)
         self.hidden_size = config.hidden_size
